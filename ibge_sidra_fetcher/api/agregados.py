@@ -62,12 +62,13 @@ def get_agregado_localidades(
     localidade_niveis: list[str],
     c: httpx.Client = None,
 ) -> bytes:
-    niveis = "|".join(localidade_niveis)
-    url = URL + f"/{agregado_id}/localidades/{niveis}"
-    logger.info(f"Downloading agregado localidades {url}")
-    if c is not None:
-        r = c.get(url)
-    else:
-        r = httpx.get(url, verify=False)
-    data = r.content
-    return data
+    localidades = []
+    for nivel in localidade_niveis:
+        url = URL + f"/{agregado_id}/localidades/{nivel}"
+        logger.info(f"Downloading agregado localidades {url}")
+        if c is not None:
+            r = c.get(url)
+        else:
+            r = httpx.get(url, verify=False)
+        localidades.extend(r.json())
+    return localidades

@@ -42,7 +42,6 @@ def main():
         print(f"    {agregado_id: >4} - {agregado_nome}")
         try:
             agregado_localidades = api.agregados.get_agregado_localidades(agregado_id, niveis, c)
-            agregado_localidades = json.loads(agregado_localidades.decode("utf-8"))
             print(f"Writing file {output_file}")
             output_file.write_text(json.dumps(agregado_localidades, indent=4))
         except Exception as e:
