@@ -45,12 +45,29 @@ def get_agregado_metadados(
 def get_agregado_periodos(
     agregado_id: int,
     c: httpx.Client = None,
-) -> dict:
+) -> bytes:
     url = URL + f"/{agregado_id}/periodos"
     logger.info(f"Downloading agregado periodos {url}")
     if c is not None:
         r = c.get(url)
     else:
         r = httpx.get(url, verify=False)
-    data = r.json()
+    data = r.content
+    return data
+
+
+@retry(stop=stop_after_attempt(3), wait=wait_exponential(multiplier=1, min=3, max=30))
+def get_agregado_localidades(
+    agregado_id: int,
+    localidade_niveis: list[str],
+    c: httpx.Client = None,
+) -> bytes:
+    niveis = "|".join(localidade_niveis)
+    url = URL + f"/{agregado_id}/localidades/{niveis}"
+    logger.info(f"Downloading agregado localidades {url}")
+    if c is not None:
+        r = c.get(url)
+    else:
+        r = httpx.get(url, verify=False)
+    data = r.content
     return data
