@@ -1,19 +1,6 @@
-import logging.config
 import json
-import os
-from pathlib import Path
 
 from .path import agregado_metadata_files
-
-
-def load_logging_config():
-    CONFIG_DIR = Path(os.getenv("CONFIG_DIR"))
-    if not CONFIG_DIR:
-        raise FileNotFoundError("No logging configuration file exists")
-    logging_config_filepath = CONFIG_DIR / "ibge-sidra-fetcher" / "logging.ini"
-    if not logging_config_filepath.exists():
-        raise FileNotFoundError("No logging configuration file exists")
-    logging.config.fileConfig(logging_config_filepath)
 
 
 def iter_sidra_agregados(datadir):
@@ -37,3 +24,54 @@ def iter_sidra_agregados(datadir):
                 "agregado_nome": agregado_nome,
                 "metadata_files": metadata_files,
             }
+
+
+def read_metadata(agregado):
+
+    fm = agregado["metadata_files"]["metadados"]
+    fl = agregado["metadata_files"]["localidades"]
+    fp = agregado["metadata_files"]["periodos"]
+
+    metadados = json.load(fm.open(mode= "r", encoding="utf-8"))
+    localidades = []
+    for f in fl.iterdir():
+        localidades.extend(json.load(f.open(mode= "r", encoding="utf-8")))
+    periodos = json.load(fp.open(mode= "r", encoding="utf-8"))
+
+    return metadados | {"localidades": localidades, "periodos": periodos}
+
+
+def calculate(aggregate_metadata):
+    localidades = aggregate_metadata["localidades"]
+    variaveis = aggregate_metadata["variaveis"]
+    classificacoes = aggregate_metadata["classificacoes"]
+    periodos = aggregate_metadata["periodos"]
+
+    stat_localidades = {}
+    for localidade in localidades:
+        if localidade["nivel"]["id"] not in stat_localidades:
+            stat_localidades[localidade["nivel"]["id"]] = 0
+        stat_localidades[localidade["nivel"]["id"]] += 1
+    n_localidades = sum(stat_localidades.values())
+
+    n_niveis_territoriais = len(stat_localidades)
+    n_variaveis = len(variaveis)
+    n_categorias = sum(
+        [
+            len(classificacao["categorias"])
+            for classificacao in classificacoes
+        ]
+    )
+    n_periodos = len(periodos)
+    period_size = n_localidades * n_variaveis * max(n_categorias, 1)
+    total_size = period_size * n_periodos
+    return {
+        "stat_localidades": stat_localidades,
+        "n_niveis_territoriais": n_niveis_territoriais,
+        "n_localidades": n_localidades,
+        "n_variaveis": n_variaveis,
+        "n_categorias": n_categorias,
+        "n_periodos": n_periodos,
+        "period_size": period_size,
+        "total_size": total_size,
+    }

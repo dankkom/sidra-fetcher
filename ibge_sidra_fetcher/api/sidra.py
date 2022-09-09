@@ -13,6 +13,8 @@ from tenacity import retry
 from tenacity.stop import stop_after_attempt
 from tenacity.wait import wait_exponential
 
+from ..config import HTTP_HEADERS, TIMEOUT
+
 logger = logging.getLogger(__name__)
 
 
@@ -30,9 +32,9 @@ def get_sidra_data(
 ) -> bytes:
     logger.info(f"Downloading SIDRA {sidra_url}")
     if c is not None:
-        r = c.get(sidra_url, verify=False)
+        r = c.get(sidra_url, headers=HTTP_HEADERS, timeout=TIMEOUT, verify=False)
     else:
-        r = httpx.get(sidra_url, verify=False)
+        r = httpx.get(sidra_url, headers=HTTP_HEADERS, timeout=TIMEOUT, verify=False)
     if r.status_code != 200:
         raise SIDRAException(f"Error status code {r.status_code}\n{r.text}")
     data = r.content

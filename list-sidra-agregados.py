@@ -1,22 +1,11 @@
-import argparse
 import json
-from pathlib import Path
 
-from ibge_sidra_fetcher import api
-
-
-def get_parser():
-    parser = argparse.ArgumentParser(description="List IBGE's aggregates")
-    parser.add_argument("-datadir", "--datadir", default="data", dest="datadir", help="Data directory")
-    return parser
+from ibge_sidra_fetcher import api, config
 
 
 def main():
-    parser = get_parser()
-    args = parser.parse_args()
-    datadir = Path(args.datadir)
-    datadir.mkdir(parents=True, exist_ok=True)
-    output = datadir / "sidra-agregados.json"
+
+    output = config.DATA_DIR / "sidra-agregados.json"
 
     if output.exists():
         with open(output, "r") as f:

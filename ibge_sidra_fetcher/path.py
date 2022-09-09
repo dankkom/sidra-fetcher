@@ -15,11 +15,18 @@ def agregado_metadata_dir(datadir: Path, pesquisa_id: str, agregado_id: int) -> 
 
 def agregado_metadata_files(datadir: Path, pesquisa_id: str, agregado_id: int) -> Path:
     metadata_dir = agregado_metadata_dir(datadir, pesquisa_id, agregado_id)
-    metadados_filename = f"metadados_{agregado_id:05}.json"
-    localidades_filename = f"localidades_{agregado_id:05}.json"
-    periodos_filename = f"periodos_{agregado_id:05}.json"
     return {
-        "metadados": metadata_dir / metadados_filename,
-        "localidades": metadata_dir / localidades_filename,
-        "periodos": metadata_dir / periodos_filename,
+        "metadados": metadata_dir / "metadados.json",
+        "localidades": metadata_dir / "localidades",
+        "periodos": metadata_dir / "periodos.json",
     }
+
+
+def agregado_metadata_localidades_nivel_file(
+    datadir: Path,
+    pesquisa_id: str,
+    agregado_id: int,
+    localidades_nivel: str,
+) -> Path:
+    metadata_dir = agregado_metadata_dir(datadir, pesquisa_id, agregado_id)
+    return metadata_dir / "localidades" / f"{localidades_nivel.lower()}.json"

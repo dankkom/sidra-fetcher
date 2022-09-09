@@ -1,36 +1,24 @@
-import argparse
+
 import json
 import time
-from pathlib import Path
 
 import httpx
 
-from ibge_sidra_fetcher import api, utils
-
-
-def get_parser():
-    parser = argparse.ArgumentParser(description="Get IBGE's agregados' periodos")
-    parser.add_argument("-datadir", "--datadir", default="data", dest="datadir", help="Data directory")
-    return parser
+from ibge_sidra_fetcher import api, config, utils
 
 
 def main():
-    parser = get_parser()
-    args = parser.parse_args()
-    datadir = Path(args.datadir)
-
-    utils.load_logging_config()
 
     c = httpx.Client()
 
-    for agregado in utils.iter_sidra_agregados(datadir):
+    for i, agregado in enumerate(utils.iter_sidra_agregados(config.DATA_DIR)):
+        pesquisa_id = agregado["pesquisa_id"]
         agregado_id = agregado["agregado_id"]
-        agregado_nome = agregado["agregado_nome"]
         output_file = agregado["metadata_files"]["periodos"]
         if output_file.exists():
             continue
         output_file.parent.mkdir(parents=True, exist_ok=True)
-        print(f"    {agregado_id: >4} - {agregado_nome}")
+        print(f"{i: >6} {pesquisa_id} {agregado_id: >4}")
         try:
             periodos = api.agregados.get_agregado_periodos(agregado_id, c)
             periodos = json.loads(periodos.decode("utf-8"))

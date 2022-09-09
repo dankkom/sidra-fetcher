@@ -11,5 +11,15 @@ IBGE's APIs list:
 
 ## Workflow
 
-1. list-sidra (pesquisa_id, pesquisa_nome, agregado_id, agregado_nome)
+1. list-sidra-agregados (pesquisa_id, pesquisa_nome, agregado_id, agregado_nome)
 2. get-agregados-metadata
+3. get-periodos
+4. fetch-data
+5. archive
+
+## Dimensions
+
+- nivelTerritorial
+- variaveis
+- classificacoes
+  - categorias

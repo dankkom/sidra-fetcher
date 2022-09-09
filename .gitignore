@@ -5,3 +5,6 @@ dist/
 
 # Poetry
 poetry.lock
+
+# Data
+data/
