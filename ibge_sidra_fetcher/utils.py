@@ -1,11 +1,11 @@
-import json
+from pathlib import Path
+from typing import Any
 
-from .path import agregado_metadata_files
+from .storage import agregado_metadata_files, read_json
 
 
-def iter_sidra_agregados(datadir):
-    with open(datadir / "sidra-agregados.json", "r", encoding="utf-8") as f:
-        sidra_agregados = json.load(f)
+def iter_sidra_agregados(datadir: Path) -> dict[str, int | str]:
+    sidra_agregados = read_json(datadir / "sidra-agregados.json")
     for pesquisa in sidra_agregados:
         pesquisa_id = pesquisa["id"]
         pesquisa_nome = pesquisa["nome"]
@@ -26,22 +26,22 @@ def iter_sidra_agregados(datadir):
             }
 
 
-def read_metadata(agregado):
+def read_metadata(agregado: dict[str, Any]) -> dict:
 
     fm = agregado["metadata_files"]["metadados"]
     fl = agregado["metadata_files"]["localidades"]
     fp = agregado["metadata_files"]["periodos"]
 
-    metadados = json.load(fm.open(mode= "r", encoding="utf-8"))
+    metadados = read_json(fm)
     localidades = []
     for f in fl.iterdir():
-        localidades.extend(json.load(f.open(mode= "r", encoding="utf-8")))
-    periodos = json.load(fp.open(mode= "r", encoding="utf-8"))
+        localidades.extend(read_json(f))
+    periodos = read_json(fp)
 
     return metadados | {"localidades": localidades, "periodos": periodos}
 
 
-def calculate(aggregate_metadata):
+def calculate_aggregate(aggregate_metadata: dict) -> dict[str, dict | int]:
     localidades = aggregate_metadata["localidades"]
     variaveis = aggregate_metadata["variaveis"]
     classificacoes = aggregate_metadata["classificacoes"]

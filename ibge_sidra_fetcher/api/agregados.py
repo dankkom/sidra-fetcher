@@ -20,16 +20,19 @@ URL = "https://servicodados.ibge.gov.br/api/v3/agregados"
 
 
 @retry(stop=stop_after_attempt(3))
-def get_agregados() -> bytes:
+def get_agregados(c: httpx.Client = None) -> bytes:
     url = URL
     logger.info(f"Downloading list of agregados metadata {url}")
-    r = httpx.get(url, headers=HTTP_HEADERS, verify=False)
+    if c is not None:
+        r = c.get(url, headers=HTTP_HEADERS)
+    else:
+        r = httpx.get(url, headers=HTTP_HEADERS, verify=False)
     data = r.content
     return data
 
 
 @retry(stop=stop_after_attempt(3))
-def get_agregado_metadados(
+def get_metadados(
     agregado_id: int,
     c: httpx.Client = None,
 ) -> bytes:
@@ -44,7 +47,7 @@ def get_agregado_metadados(
 
 
 @retry(stop=stop_after_attempt(3), wait=wait_exponential(multiplier=1, min=3, max=30))
-def get_agregado_periodos(
+def get_periodos(
     agregado_id: int,
     c: httpx.Client = None,
 ) -> bytes:
@@ -58,7 +61,7 @@ def get_agregado_periodos(
     return data
 
 
-def get_agregado_localidades(
+def get_localidades(
     agregado_id: int,
     localidades_nivel: str,
     c: httpx.Client = None,
