@@ -1,77 +1,154 @@
 from pathlib import Path
-from typing import Any
+from typing import Generator
 
-from .storage import agregado_metadata_files, read_json
+from .sidra.agregado import Agregado, Localidade, Periodo, Variavel
+from .sidra.parametro import Parametro
+from .stats import calculate_aggregate
+from .storage import get_filepath, read_json, read_metadados
+
+SIZE_THRESHOLD = 50_000
 
 
-def iter_sidra_agregados(datadir: Path) -> dict[str, int | str]:
+def iter_sidra_agregados(datadir: Path) -> Generator[Agregado, None, None]:
     sidra_agregados = read_json(datadir / "sidra-agregados.json")
     for pesquisa in sidra_agregados:
         pesquisa_id = pesquisa["id"]
-        pesquisa_nome = pesquisa["nome"]
         for agregado in pesquisa["agregados"]:
             agregado_id = int(agregado["id"])
-            agregado_nome = agregado["nome"]
-            metadata_files = agregado_metadata_files(
-                datadir,
-                pesquisa_id,
-                agregado_id,
+            yield read_metadados(
+                datadir=datadir,
+                pesquisa_id=pesquisa_id,
+                agregado_id=agregado_id,
             )
-            yield {
-                "pesquisa_id": pesquisa_id,
-                "pesquisa_nome": pesquisa_nome,
-                "agregado_id": agregado_id,
-                "agregado_nome": agregado_nome,
-                "metadata_files": metadata_files,
-            }
 
 
-def read_metadata(agregado: dict[str, Any]) -> dict:
-
-    fm = agregado["metadata_files"]["metadados"]
-    fl = agregado["metadata_files"]["localidades"]
-    fp = agregado["metadata_files"]["periodos"]
-
-    metadados = read_json(fm)
-    localidades = []
-    for f in fl.iterdir():
-        localidades.extend(read_json(f))
-    periodos = read_json(fp)
-
-    return metadados | {"localidades": localidades, "periodos": periodos}
-
-
-def calculate_aggregate(aggregate_metadata: dict) -> dict[str, dict | int]:
-    localidades = aggregate_metadata["localidades"]
-    variaveis = aggregate_metadata["variaveis"]
-    classificacoes = aggregate_metadata["classificacoes"]
-    periodos = aggregate_metadata["periodos"]
-
-    stat_localidades = {}
-    for localidade in localidades:
-        if localidade["nivel"]["id"] not in stat_localidades:
-            stat_localidades[localidade["nivel"]["id"]] = 0
-        stat_localidades[localidade["nivel"]["id"]] += 1
-    n_localidades = sum(stat_localidades.values())
-
-    n_niveis_territoriais = len(stat_localidades)
-    n_variaveis = len(variaveis)
-    n_categorias = sum(
-        [
-            len(classificacao["categorias"])
-            for classificacao in classificacoes
-        ]
+def get_territories_all(agregado: Agregado) -> dict[str, list[str]]:
+    localidade_nivel = sorted(
+        set(loc.id_nivel.strip("N") for loc in agregado.localidades)
     )
-    n_periodos = len(periodos)
-    period_size = n_localidades * n_variaveis * max(n_categorias, 1)
-    total_size = period_size * n_periodos
-    return {
-        "stat_localidades": stat_localidades,
-        "n_niveis_territoriais": n_niveis_territoriais,
-        "n_localidades": n_localidades,
-        "n_variaveis": n_variaveis,
-        "n_categorias": n_categorias,
-        "n_periodos": n_periodos,
-        "period_size": period_size,
-        "total_size": total_size,
-    }
+    return {loc_nivel_id: ["all"] for loc_nivel_id in localidade_nivel}
+
+
+def get_parameter_territories_all(agregado: Agregado, periodo: Periodo) -> Parametro:
+    return Parametro(
+        aggregate=str(agregado.id),
+        territories=get_territories_all(agregado),
+        variables=["all"],
+        periods=[str(periodo.id)],
+        classifications={c.id: ["all"] for c in agregado.classificacoes},
+    )
+
+
+def get_parameter_localidade(
+    agregado: Agregado, periodo: Periodo, localidade: Localidade
+) -> Parametro:
+    return Parametro(
+        aggregate=str(agregado.id),
+        territories={
+            localidade.id_nivel.strip("N"): [str(localidade.id)],
+        },
+        variables=["all"],
+        periods=[str(periodo.id)],
+        classifications={c.id: ["all"] for c in agregado.classificacoes},
+    )
+
+
+def get_parameter_localidade_variavel(
+    agregado: Agregado,
+    periodo: Periodo,
+    localidade: Localidade,
+    variavel: Variavel,
+) -> Parametro:
+    return Parametro(
+        aggregate=str(agregado.id),
+        territories={
+            localidade.id_nivel.strip("N"): [str(localidade.id)],
+        },
+        variables=[variavel.id],
+        periods=[str(periodo.id)],
+        classifications={c.id: ["all"] for c in agregado.classificacoes},
+    )
+
+
+def iter_tasks_agregado_periodo_localidade(
+    datadir: Path,
+    agregado: Agregado,
+    periodo: Periodo,
+    localidade: Localidade,
+) -> Generator[tuple[str, Path], None, None]:
+    for variavel in agregado.variaveis:
+        parameter = get_parameter_localidade_variavel(
+            agregado=agregado,
+            periodo=periodo,
+            localidade=localidade,
+            variavel=variavel,
+        )
+        dest_filepath = get_filepath(
+            datadir=datadir,
+            pesquisa_id=agregado.pesquisa.id,
+            agregado_id=agregado.id,
+            periodo_id=periodo.id,
+            localidade_id=localidade.id,
+            variavel_id=variavel.id,
+        )
+        yield parameter.url(), dest_filepath
+
+
+def iter_tasks_agregado_periodo(
+    datadir: Path,
+    agregado: Agregado,
+    periodo: Periodo
+) -> Generator[tuple[str, Path], None, None]:
+    for localidade in agregado.localidades:
+        parameter = get_parameter_localidade(agregado=agregado, periodo=periodo)
+        dest_filepath = get_filepath(
+            datadir=datadir,
+            pesquisa_id=agregado.pesquisa.id,
+            agregado_id=agregado.id,
+            periodo_id=periodo.id,
+            localidade_id=localidade.id,
+        )
+        yield parameter.url(), dest_filepath
+
+
+def iter_tasks_agregado(
+    datadir: Path,
+    agregado: Agregado,
+) -> Generator[tuple[str, Path], None, None]:
+    for periodo in agregado.periodos:
+        dest_filepath = get_filepath(
+            datadir=datadir,
+            pesquisa_id=agregado.pesquisa.id,
+            agregado=agregado,
+            periodo=periodo,
+        )
+        parameter = get_parameter_territories_all(agregado, periodo)
+        yield parameter.url(), dest_filepath
+
+
+def iter_tasks(datadir) -> Generator[tuple[str, Path], None, None]:
+    for agregado in iter_sidra_agregados(datadir):
+        m = calculate_aggregate(agregado)
+        periodo_size = m["n_dimensoes"] * m["n_variaveis"] * m["n_localidades"]
+        periodo_localidade_size = m["n_dimensoes"] * m["n_variaveis"]
+        periodo_localidade_variavel_size = m["n_dimensoes"]
+        if periodo_size <= SIZE_THRESHOLD:
+            yield from iter_tasks_agregado(datadir=datadir, agregado=agregado)
+        elif periodo_localidade_size < SIZE_THRESHOLD:
+            for periodo in agregado.periodos:
+                yield from iter_tasks_agregado_periodo(
+                    datadir=datadir,
+                    agregado=agregado,
+                    periodo=periodo,
+                )
+        elif periodo_localidade_variavel_size < SIZE_THRESHOLD:
+            for periodo in agregado.periodos:
+                for localidade in agregado.localidades:
+                    yield from iter_tasks_agregado_periodo_localidade(
+                        datadir=datadir,
+                        agregado=agregado,
+                        periodo=periodo,
+                        localidade=localidade,
+                    )
+        else:
+            print("Too large!")

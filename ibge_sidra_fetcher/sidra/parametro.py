@@ -1,39 +1,39 @@
 import re
 from typing import Any, Optional
 
-URL = "https://apisidra.ibge.gov.br/values"
+BASE_URL = "https://apisidra.ibge.gov.br/values"
 
 
-class Parameter:
+class Parametro:
 
     # Agregado
-    aggregate: str
+    agregado: str
     # 1 => /t/1
 
     # Variáveis
-    variables: list[str]
+    variaveis: list[str]
     # ["123", "1234"] => /v/123,1234
     # [] => /v/all
     # ["all"] => /v/all
 
     # Nível territorial
-    territories: dict[str, list[str]]
+    territorios: dict[str, list[str]]
     # {"6": ["3304557", "3550308"]} => /n6/3304557,3550308
     # {"1": ["all"], "6": []} => /n1/all/n6/all
 
     # Períodos
-    periods: list[str]
+    periodos: list[str]
     # ["201201", "201301-201312"] => /p/201201,201301-201312
     # [] => /p/all
     # ["all"] => /p/all
 
     # Classificações
-    classifications: dict[str, list[str]]
+    classificacoes: dict[str, list[str]]
     # {"1": ["123", "321"], "32": ["23"]} => /c1/123,321/c32/23
     # {"1": ["all"], "32": []} => /c1/all/c32/all
 
     # Precisão
-    decimals: str
+    decimais: str
     # /d/m
 
     def __init__(
@@ -45,48 +45,48 @@ class Parameter:
         classifications: dict[str, list[str]],
         decimals: Optional[str] = "/d/m",       # Padrão é precisão máxima
     ) -> None:
-        self.aggregate = aggregate
-        self.territories = territories
-        self.variables = variables
-        self.periods = periods
-        self.classifications = classifications
-        self.decimals = decimals
+        self.agregado = aggregate
+        self.territorios = territories
+        self.variaveis = variables
+        self.periodos = periods
+        self.classificacoes = classifications
+        self.decimais = decimals
 
-    def assign(self, name: str, value: Any) -> "Parameter":
-        p = Parameter(
-            aggregate=self.aggregate,
-            territories=self.territories,
-            variables=self.variables,
-            periods=self.periods,
-            classifications=self.classifications,
-            decimals=self.decimals,
+    def assign(self, name: str, value: Any) -> "Parametro":
+        p = Parametro(
+            aggregate=self.agregado,
+            territories=self.territorios,
+            variables=self.variaveis,
+            periods=self.periodos,
+            classifications=self.classificacoes,
+            decimals=self.decimais,
         )
         setattr(p, name, value)
         return p
 
     def url(self) -> str:
 
-        t = f"/t/{self.aggregate}"  # Agregado
+        t = f"/t/{self.agregado}"  # Agregado
 
         n = ""
-        for key, value in self.territories.items():
+        for key, value in self.territorios.items():
             if len(value) > 0:
                 n = n + f"/n{key}/" + ",".join(value)
             else:
                 n = n + f"/n{key}/all"
 
-        if len(self.variables) > 0:
-            v = "/v/" + ",".join(self.variables)
+        if len(self.variaveis) > 0:
+            v = "/v/" + ",".join(self.variaveis)
         else:
             v = "/v/all"
 
-        if len(self.periods) > 0:
-            p = "/p/" + ",".join(self.periods)
+        if len(self.periodos) > 0:
+            p = "/p/" + ",".join(self.periodos)
         else:
             p = "/p/all"
 
         c = ""
-        for key, value in self.classifications.items():
+        for key, value in self.classificacoes.items():
             if len(value) > 0:
                 c = c + f"/c{key}/" + ",".join(value)
             else:
@@ -94,7 +94,7 @@ class Parameter:
 
         d = "/d/m"  # Precisão máxima
 
-        return URL + t + n + v + p + c + d
+        return BASE_URL + t + n + v + p + c + d
 
     def __repr__(self) -> str:
         return self.url()
@@ -102,25 +102,25 @@ class Parameter:
     def __str__(self) -> str:
         return self.url()
 
-    def __eq__(self, o: "Parameter") -> bool:
-        aggregate = self.aggregate == o.aggregate
-        territories = self.territories == o.territories
-        variables = self.variables == o.variables
-        periods = self.periods == o.periods
-        classifications = self.classifications == o.classifications
-        decimals = self.decimals == o.decimals
+    def __eq__(self, o: "Parametro") -> bool:
+        agregado = self.agregado == o.agregado
+        territorios = self.territorios == o.territorios
+        variaveis = self.variaveis == o.variaveis
+        periodos = self.periodos == o.periodos
+        classificacoes = self.classificacoes == o.classificacoes
+        decimais = self.decimais == o.decimais
         return (
-            aggregate
-            and territories
-            and variables
-            and periods
-            and classifications
-            and decimals
+            agregado
+            and territorios
+            and variaveis
+            and periodos
+            and classificacoes
+            and decimais
         )
 
 
 def get_sidra_url_request_period(
-    parameter: Parameter,
+    parameter: Parametro,
     period_id: int,
 ) -> str:
     p = parameter.assign("periods", [str(period_id)])
@@ -203,7 +203,7 @@ def parse_url(url: str) -> dict[str, str]:
         "periods": periods,
     }
     """
-    url = url.replace(URL, "")  # Remove the base of the url
+    url = url.replace(BASE_URL, "")  # Remove the base of the url
 
     t, aggregate = parse_aggregate(url)
     n, territories = parse_territories(url)
@@ -229,14 +229,14 @@ def parse_url(url: str) -> dict[str, str]:
     }
 
 
-def parameter_from_url(url: str) -> Parameter:
+def parameter_from_url(url: str) -> Parametro:
     _, aggregate = parse_aggregate(url)
     _, territories = parse_territories(url)
     _, classifications = parse_classifications(url)
     _, variables = parse_variables(url)
     _, decimal = parse_decimal(url)
     _, periods = parse_periods(url)
-    parameter = Parameter(
+    parameter = Parametro(
         aggregate=aggregate,
         territories=territories,
         variables=variables,

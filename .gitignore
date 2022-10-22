@@ -8,3 +8,5 @@ poetry.lock
 
 # Data
 data/
+
+.venv/
