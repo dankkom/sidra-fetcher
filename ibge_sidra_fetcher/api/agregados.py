@@ -1,10 +1,3 @@
-"""Functions to request resources from IBGE's agregados APIs
-
-- https://servicodados.ibge.gov.br/api/docs/agregados?versao=3
-
-"""
-
-
 import logging
 
 import httpx
@@ -13,6 +6,7 @@ from tenacity.stop import stop_after_attempt
 from tenacity.wait import wait_exponential
 
 from ..config import HTTP_HEADERS, TIMEOUT
+from . import url
 
 logger = logging.getLogger(__name__)
 
@@ -21,12 +15,12 @@ URL = "https://servicodados.ibge.gov.br/api/v3/agregados"
 
 @retry(stop=stop_after_attempt(3))
 def get_agregados(c: httpx.Client = None) -> bytes:
-    url = URL
-    logger.info(f"Downloading list of agregados metadata {url}")
+    url_agregados = url.agregados()
+    logger.info(f"Downloading list of agregados metadata {url_agregados}")
     if c is not None:
-        r = c.get(url, headers=HTTP_HEADERS)
+        r = c.get(url_agregados, headers=HTTP_HEADERS)
     else:
-        r = httpx.get(url, headers=HTTP_HEADERS, verify=False)
+        r = httpx.get(url_agregados, headers=HTTP_HEADERS, verify=False)
     data = r.content
     return data
 
@@ -36,12 +30,12 @@ def get_metadados(
     agregado_id: int,
     c: httpx.Client = None,
 ) -> bytes:
-    url = URL + f"/{agregado_id}/metadados"
-    logger.info(f"Downloading agregado metadados {url}")
+    url_metadados = url.metadados(agregado_id)
+    logger.info(f"Downloading agregado metadados {url_metadados}")
     if c is not None:
-        r = c.get(url, headers=HTTP_HEADERS)
+        r = c.get(url_metadados, headers=HTTP_HEADERS)
     else:
-        r = httpx.get(url, headers=HTTP_HEADERS, verify=False)
+        r = httpx.get(url_metadados, headers=HTTP_HEADERS, verify=False)
     data = r.content
     return data
 
@@ -51,12 +45,12 @@ def get_periodos(
     agregado_id: int,
     c: httpx.Client = None,
 ) -> bytes:
-    url = URL + f"/{agregado_id}/periodos"
-    logger.info(f"Downloading agregado periodos {url}")
+    url_periodos = url.periodos(agregado_id)
+    logger.info(f"Downloading agregado periodos {url_periodos}")
     if c is not None:
-        r = c.get(url, headers=HTTP_HEADERS)
+        r = c.get(url_periodos, headers=HTTP_HEADERS)
     else:
-        r = httpx.get(url, headers=HTTP_HEADERS, verify=False)
+        r = httpx.get(url_periodos, headers=HTTP_HEADERS, verify=False)
     data = r.content
     return data
 
@@ -66,11 +60,13 @@ def get_localidades(
     localidades_nivel: str,
     c: httpx.Client = None,
 ) -> bytes:
-    url = URL + f"/{agregado_id}/localidades/{localidades_nivel}"
-    logger.info(f"Downloading agregado localidades {url}")
+    url_localidades = url.localidades(agregado_id, localidades_nivel)
+    logger.info(f"Downloading agregado localidades {url_localidades}")
     if c is not None:
-        r = c.get(url, headers=HTTP_HEADERS, timeout=TIMEOUT)
+        r = c.get(url_localidades, headers=HTTP_HEADERS, timeout=TIMEOUT)
     else:
-        r = httpx.get(url, headers=HTTP_HEADERS, timeout=TIMEOUT, verify=False)
+        r = httpx.get(
+            url_localidades, headers=HTTP_HEADERS, timeout=TIMEOUT, verify=False
+        )
     localidades = r.json()
     return localidades
