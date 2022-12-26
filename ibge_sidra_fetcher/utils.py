@@ -1,21 +1,21 @@
 from pathlib import Path
 from typing import Generator
 
-from .sidra.agregado import Agregado, Localidade, Periodo, Variavel
-from .sidra.parametro import Parametro
+from .api.sidra.agregado import Agregado, Localidade, Periodo, Variavel
+from .api.sidra.parametro import Parametro
 from .stats import calculate_aggregate
-from .storage import get_filepath, read_json, read_metadados
+from .storage import io, locus, raw
 
 SIZE_THRESHOLD = 50_000
 
 
 def iter_sidra_agregados(datadir: Path) -> Generator[Agregado, None, None]:
-    sidra_agregados = read_json(datadir / "sidra-agregados.json")
+    sidra_agregados = raw.read_json(datadir / "sidra-agregados.json")
     for pesquisa in sidra_agregados:
         pesquisa_id = pesquisa["id"]
         for agregado in pesquisa["agregados"]:
             agregado_id = int(agregado["id"])
-            yield read_metadados(
+            yield io.read_metadados(
                 datadir=datadir,
                 pesquisa_id=pesquisa_id,
                 agregado_id=agregado_id,
@@ -83,7 +83,7 @@ def iter_tasks_agregado_periodo_localidade(
             localidade=localidade,
             variavel=variavel,
         )
-        dest_filepath = get_filepath(
+        dest_filepath = locus.data_filepath(
             datadir=datadir,
             pesquisa_id=agregado.pesquisa.id,
             agregado_id=agregado.id,
@@ -95,13 +95,11 @@ def iter_tasks_agregado_periodo_localidade(
 
 
 def iter_tasks_agregado_periodo(
-    datadir: Path,
-    agregado: Agregado,
-    periodo: Periodo
+    datadir: Path, agregado: Agregado, periodo: Periodo
 ) -> Generator[tuple[str, Path], None, None]:
     for localidade in agregado.localidades:
         parameter = get_parameter_localidade(agregado=agregado, periodo=periodo)
-        dest_filepath = get_filepath(
+        dest_filepath = locus.data_filepath(
             datadir=datadir,
             pesquisa_id=agregado.pesquisa.id,
             agregado_id=agregado.id,
@@ -116,7 +114,7 @@ def iter_tasks_agregado(
     agregado: Agregado,
 ) -> Generator[tuple[str, Path], None, None]:
     for periodo in agregado.periodos:
-        dest_filepath = get_filepath(
+        dest_filepath = locus.data_filepath(
             datadir=datadir,
             pesquisa_id=agregado.pesquisa.id,
             agregado=agregado,

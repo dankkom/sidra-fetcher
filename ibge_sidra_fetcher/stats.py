@@ -1,6 +1,6 @@
 from functools import reduce
 
-from .sidra.agregado import Agregado
+from .api.sidra.agregado import Agregado
 
 
 def get_stat_localidades(agregado: Agregado) -> dict[str, int]:
@@ -15,10 +15,7 @@ def get_stat_localidades(agregado: Agregado) -> dict[str, int]:
 def get_n_dimensoes(agregado: Agregado) -> int:
     n_dimensoes = reduce(
         lambda x, y: x * y,
-        [
-            len(classificacao.categorias)
-            for classificacao in agregado.classificacoes
-        ],
+        [len(classificacao.categorias) for classificacao in agregado.classificacoes],
         1,
     )
     return n_dimensoes
