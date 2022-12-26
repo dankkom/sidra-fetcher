@@ -12,22 +12,24 @@ from tenacity.wait import wait_exponential
 
 from . import utils
 from .api import agregados
-from .config import DATA_DIR, HTTP_HEADERS, TIMEOUT
-from .storage import (agregado_metadata_localidades_nivel_filepath, read_json,
-                      write_json, write_data)
+from .config import DATA_DIR
+from .storage import (
+    agregado_metadata_localidades_nivel_filepath,
+    read_json,
+    write_data,
+    write_json,
+)
 
 logger = logging.getLogger(__name__)
 
 
 class SIDRAException(Exception):
-
     def __init__(self, msg) -> None:
         self.msg = msg
         logger.exception(msg)
 
 
 class Fetcher(Thread):
-
     def __init__(self, q: Queue, data_dir: Path):
         super().__init__()
         self.daemon = True
@@ -35,7 +37,7 @@ class Fetcher(Thread):
         self.q = q
 
     def run(self):
-        client = httpx.Client()
+        client = httpx.Client(timeout=300)
         while True:
             task = self.q.get()
             dest_filepath = task["dest_filepath"]
@@ -55,24 +57,21 @@ class Fetcher(Thread):
             time.sleep(2 * random.random())
 
 
-@retry(stop=stop_after_attempt(3), wait=wait_exponential(multiplier=1, min=3, max=30))
+@retry(
+    stop=stop_after_attempt(10),
+    wait=wait_exponential(multiplier=2, min=10, max=120),
+)
 def get_sidra_data(
     sidra_url: str,
     client: httpx.Client = None,
 ) -> bytes:
     logger.info(f"Downloading SIDRA {sidra_url}")
-    if client is not None:
-        r = client.get(sidra_url)
-    else:
-        r = httpx.get(
-            sidra_url,
-            headers=HTTP_HEADERS,
-            timeout=TIMEOUT,
-            verify=False,
-        )
-    if r.status_code != 200:
-        raise SIDRAException(f"Error status code {r.status_code}\n{r.text}")
-    data = r.content
+    data = b""
+    with client.stream("GET", sidra_url) as r:
+        if r.status_code != 200:
+            raise SIDRAException(f"Error status code {r.status_code}\n{r.text}")
+        for chunk in r.iter_bytes():
+            data += chunk
     if data is None:
         raise SIDRAException("Data returned is None!")
     return data
@@ -114,7 +113,6 @@ def get_agregados_metadados(client: httpx.Client):
 
 
 def get_agregados_localidades(client: httpx.Client):
-
     def get_niveis(metadados):
         nivel_territorial = metadados["nivelTerritorial"]
         administrativo = nivel_territorial["Administrativo"]
