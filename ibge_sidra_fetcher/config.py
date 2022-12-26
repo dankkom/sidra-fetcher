@@ -11,9 +11,10 @@ DATA_DIR = os.getenv("DATA_DIR")
 if not DATA_DIR:
     raise FileNotFoundError("No data directory found in environment variables")
 DATA_DIR = Path(DATA_DIR) / "raw" / "ibge" / "sidra"
+DATA_DIR.mkdir(exist_ok=True, parents=True)
 
 _config = configparser.ConfigParser()
-_config.read(CONFIG_DIR / "ibge-sidra-fetcher" / "config.ini")
+_config.read(CONFIG_DIR / "ibge-sidra" / "config.ini")
 
 USER_AGENT = _config["DEFAULT"]["USER_AGENT"]
 HTTP_HEADERS = {
@@ -21,7 +22,7 @@ HTTP_HEADERS = {
 }
 TIMEOUT = int(_config["DEFAULT"]["TIMEOUT"])
 
-_logging_config_filepath = CONFIG_DIR / "ibge-sidra-fetcher" / "logging.ini"
+_logging_config_filepath = CONFIG_DIR / "ibge-sidra" / "logging.ini"
 if not _logging_config_filepath.exists():
     raise FileNotFoundError("No logging configuration file exists")
 logging.config.fileConfig(_logging_config_filepath)
