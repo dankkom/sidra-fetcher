@@ -10,7 +10,7 @@ CONFIG_DIR = Path(CONFIG_DIR)
 DATA_DIR = os.getenv("DATA_DIR")
 if not DATA_DIR:
     raise FileNotFoundError("No data directory found in environment variables")
-DATA_DIR = Path(DATA_DIR) / "raw" / "ibge" / "sidra"
+DATA_DIR = Path(DATA_DIR) / "raw" / "ibge-sidra"
 DATA_DIR.mkdir(exist_ok=True, parents=True)
 
 _config = configparser.ConfigParser()
