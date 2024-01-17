@@ -5,7 +5,6 @@ BASE_URL = "https://apisidra.ibge.gov.br/values"
 
 
 class Parametro:
-
     # Agregado
     agregado: str
     # 1 => /t/1
@@ -43,7 +42,7 @@ class Parametro:
         variables: list[str],
         periods: list[str],
         classifications: dict[str, list[str]],
-        decimals: Optional[str] = "/d/m",       # Padrão é precisão máxima
+        decimals: Optional[str] = "/d/m",  # Padrão é precisão máxima
     ) -> None:
         self.agregado = aggregate
         self.territorios = territories
@@ -65,7 +64,6 @@ class Parametro:
         return p
 
     def url(self) -> str:
-
         t = f"/t/{self.agregado}"  # Agregado
 
         n = ""
