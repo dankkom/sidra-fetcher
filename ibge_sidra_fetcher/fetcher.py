@@ -79,6 +79,11 @@ def sidra_agregados(client: httpx.Client) -> bytes:
     return data
 
 
+def sidra_agregados_metadados(agregado_id: int, client: httpx.Client) -> bytes:
+    data = agregados.get_metadados(agregado_id, client)
+    return data
+
+
 @retry(
     stop=stop_after_attempt(10),
     wait=wait_exponential(multiplier=2, min=10, max=120),
