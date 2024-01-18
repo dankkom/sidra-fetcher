@@ -6,7 +6,7 @@ from ibge_sidra_fetcher import storage
 
 
 def main():
-    client = httpx.Client()
+    client = httpx.Client(timeout=config.TIMEOUT)
     sidra_agregados_filepath = storage.sidra_agregados_filepath(datadir=config.DATA_DIR)
     if not sidra_agregados_filepath.exists():
         sidra_agregados_data = fetcher.sidra_agregados(client=client)
@@ -21,6 +21,8 @@ def main():
                 pesquisa_id=pesquisa_id,
                 agregado_id=agregado_id,
             )
+            if agregados_metadados_filepath.exists():
+                continue
             agregados_metadados_data = fetcher.sidra_agregados_metadados(
                 agregado_id=agregado_id, client=client
             )
