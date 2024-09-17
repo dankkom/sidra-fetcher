@@ -1,4 +1,4 @@
-from .agregado import (
+from ..agregados.agregado import (
     Agregado,
     Categoria,
     Classificacao,

@@ -1,16 +1,16 @@
-import logging
 import random
 import time
 from pathlib import Path
 from queue import Queue
 from threading import Thread
+from typing import Generator
 
 import httpx
 from tenacity import retry
 from tenacity.stop import stop_after_attempt
 from tenacity.wait import wait_exponential
 
-from .api import agregados, url
+from . import api, logger
 from .config import DATA_DIR, HTTP_HEADERS
 from .storage import (
     agregado_localidades_filepath,
@@ -18,8 +18,6 @@ from .storage import (
     agregado_periodos_filepath,
     write_data,
 )
-
-logger = logging.getLogger(__name__)
 
 
 class Fetcher(Thread):
@@ -59,6 +57,7 @@ def get(
     client: httpx.Client,
 ) -> bytes:
     logger.info(f"Downloading DATA {url}")
+    t0 = time.time()
     data = b""
     with client.stream("GET", url, headers=HTTP_HEADERS, verify=False) as r:
         if r.status_code != 200:
@@ -67,6 +66,8 @@ def get(
             data += chunk
     if data is None:
         raise ConnectionError("Data returned is None!")
+    t1 = time.time()
+    logger.debug(f"Download of {url} took {t1 - t0:.2f} seconds")
     return data
 
 
@@ -75,12 +76,12 @@ def get(
     wait=wait_exponential(multiplier=2, min=10, max=120),
 )
 def sidra_agregados(client: httpx.Client) -> bytes:
-    data = agregados.get_agregados(client)
+    data = api.agregados.handler.get_agregados(client)
     return data
 
 
 def sidra_agregados_metadados(agregado_id: int, client: httpx.Client) -> bytes:
-    data = agregados.get_metadados(agregado_id, client)
+    data = api.agregados.handler.get_metadados(agregado_id, client)
     return data
 
 
@@ -93,20 +94,13 @@ def sidra_data(
     client: httpx.Client = None,
 ) -> bytes:
     logger.info(f"Downloading SIDRA {sidra_url}")
-    data = b""
-    with client.stream("GET", sidra_url) as r:
-        if r.status_code != 200:
-            raise ConnectionError(f"Error status code {r.status_code}\n{r.text}")
-        for chunk in r.iter_bytes():
-            data += chunk
-    if data is None:
-        raise ConnectionError("Data returned is None!")
+    data = get(sidra_url, client)
     return data
 
 
 # DISPATCH --------------------------------------------------------------------
 def metadados(pesquisa_id: str, agregado_id: int) -> dict[str, str | Path]:
-    url_metadados = url.metadados(agregado_id=agregado_id)
+    url_metadados = api.agregados.url.metadados(agregado_id=agregado_id)
     dest_filepath = agregado_metadados_filepath(
         datadir=DATA_DIR,
         pesquisa_id=pesquisa_id,
@@ -119,7 +113,7 @@ def metadados(pesquisa_id: str, agregado_id: int) -> dict[str, str | Path]:
 
 
 def periodos(pesquisa_id: str, agregado_id: int) -> dict[str, str | Path]:
-    url_periodos = url.periodos(agregado_id=agregado_id)
+    url_periodos = api.agregados.url.periodos(agregado_id=agregado_id)
     dest_filepath = agregado_periodos_filepath(
         datadir=DATA_DIR,
         pesquisa_id=pesquisa_id,
@@ -136,7 +130,7 @@ def localidades(
     agregado_id: int,
     localidades_nivel: str,
 ) -> dict[str, str | Path]:
-    url_localidades = url.localidades(
+    url_localidades = api.agregados.url.localidades(
         agregado_id=agregado_id,
         localidades_nivel=localidades_nivel,
     )
@@ -152,7 +146,9 @@ def localidades(
     }
 
 
-def agregado_localidades(pesquisa_id: str, metadados: dict) -> dict[str, str | Path]:
+def agregado_localidades(
+    pesquisa_id: str, metadados: dict
+) -> Generator[dict[str, str | Path], None, None]:
     """Fetches Localidades metadata, expects Metadados file in data directory"""
 
     def get_niveis(metadados: dict) -> set[str]:

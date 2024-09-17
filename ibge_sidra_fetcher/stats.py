@@ -1,18 +1,23 @@
+"""Módulo com funções para calcular estatísticas sobre os metadados dos agregados."""
+
 from functools import reduce
 
-from .api.sidra.agregado import Agregado
+from .api.agregados.agregado import Agregado
 
 
 def get_stat_localidades(agregado: Agregado) -> dict[str, int]:
+    """Calcula a quantidade de localidades por nível territorial."""
     stat_localidades = {}
     for localidade in agregado.localidades:
-        if localidade.id_nivel not in stat_localidades:
-            stat_localidades[localidade.id_nivel] = 0
-        stat_localidades[localidade.id_nivel] += 1
+        nivel_id = localidade.nivel.id
+        if nivel_id not in stat_localidades:
+            stat_localidades[nivel_id] = 0
+        stat_localidades[nivel_id] += 1
     return stat_localidades
 
 
 def get_n_dimensoes(agregado: Agregado) -> int:
+    """Calcula o número de dimensões do agregado."""
     n_dimensoes = reduce(
         lambda x, y: x * y,
         [len(classificacao.categorias) for classificacao in agregado.classificacoes],
@@ -22,6 +27,7 @@ def get_n_dimensoes(agregado: Agregado) -> int:
 
 
 def calculate_aggregate(agregado: Agregado) -> dict[str, dict | int]:
+    """Calcula estatísticas sobre o agregado."""
     stat_localidades = get_stat_localidades(agregado)
     n_localidades = sum(stat_localidades.values())
 

@@ -169,8 +169,7 @@ def parse_classifications(url):
     c = re.findall(r"(\/c\d+\/)(all|allxt|\d+(,\d+)*)", url)
     c = ["".join(g) for g in c]
     classifications = {
-        cat.strip("c"): [select]
-        for _, cat, select in [i.split("/") for i in c]
+        cat.strip("c"): [select] for _, cat, select in [i.split("/") for i in c]
     }
 
     return c, classifications
@@ -184,7 +183,7 @@ def parse_aggregate(url):
 
 
 def parse_url(url: str) -> dict[str, str]:
-    """
+    """Given a URL, returns a dictionary with the parameters of the URL
     {
         "url": url,
         "t": t,
@@ -228,6 +227,7 @@ def parse_url(url: str) -> dict[str, str]:
 
 
 def parameter_from_url(url: str) -> Parametro:
+    """Given a URL, returns a Parametro object"""
     _, aggregate = parse_aggregate(url)
     _, territories = parse_territories(url)
     _, classifications = parse_classifications(url)

@@ -1,20 +1,27 @@
+"""Dataclasses for the data returned by agregados API."""
+
 import datetime as dt
 from dataclasses import dataclass
 
 
 @dataclass
 class Periodo:
-    id: int
+    id: str
     literals: list[str]
     modificacao: dt.date
 
 
 @dataclass
-class Localidade:
-    id: int
+class LocalidadeNivel:
+    id: str
     nome: str
-    id_nivel: str
-    nome_nivel: str
+
+
+@dataclass
+class Localidade:
+    id: str
+    nome: str
+    nivel: LocalidadeNivel
 
 
 @dataclass
@@ -22,20 +29,28 @@ class Variavel:
     id: int
     nome: str
     unidade: str
+    sumarizacao: list[str]
 
 
 @dataclass
 class Categoria:
     id: int
     nome: str
-    unidade: str
+    unidade: str | None
     nivel: int
+
+
+@dataclass
+class ClassificacaoSumarizacao:
+    status: bool
+    excecao: list
 
 
 @dataclass
 class Classificacao:
     id: int
     nome: str
+    sumarizacao: ClassificacaoSumarizacao
     categorias: list[Categoria]
 
 
@@ -46,13 +61,28 @@ class Pesquisa:
 
 
 @dataclass
+class Periodicidade:
+    frequencia: str
+    inicio: str
+    fim: str
+
+
+@dataclass
+class NivelTerritorial:
+    administrativo: list[str]
+    especial: list[str]
+    ibge: list[str]
+
+
+@dataclass
 class Agregado:
     id: int
     nome: str
     url: str
     pesquisa: Pesquisa
     assunto: str
-    periodicidade_frequencia: str
+    periodicidade: Periodicidade
+    nivel_territorial: NivelTerritorial
     variaveis: list[Variavel]
     classificacoes: list[Classificacao]
     periodos: list[Periodo]

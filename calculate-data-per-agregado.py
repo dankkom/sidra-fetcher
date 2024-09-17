@@ -1,9 +1,12 @@
-from ibge_sidra_fetcher import utils, stats
+from ibge_sidra_fetcher import stats, utils
 from ibge_sidra_fetcher.config import DATA_DIR
 
 
 def main():
     for i, agregado in enumerate(utils.iter_sidra_agregados(DATA_DIR), 1):
+        if not agregado:
+            continue
+
         n = stats.calculate_aggregate(agregado)
         msg = [
             f"{i: >6}",

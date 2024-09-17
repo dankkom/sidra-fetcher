@@ -1,16 +1,11 @@
-import logging
-
 import httpx
 from tenacity import retry
 from tenacity.stop import stop_after_attempt
 from tenacity.wait import wait_exponential
 
-from ..config import HTTP_HEADERS, TIMEOUT
+from ...config import HTTP_HEADERS, TIMEOUT
 from . import url
-
-logger = logging.getLogger(__name__)
-
-URL = "https://servicodados.ibge.gov.br/api/v3/agregados"
+from ... import logger
 
 
 @retry(stop=stop_after_attempt(3))
@@ -20,7 +15,9 @@ def get_agregados(c: httpx.Client = None) -> bytes:
     if c is not None:
         r = c.get(url_agregados, headers=HTTP_HEADERS)
     else:
-        r = httpx.get(url_agregados, headers=HTTP_HEADERS, verify=False)
+        r = httpx.get(
+            url_agregados, headers=HTTP_HEADERS, timeout=TIMEOUT, verify=False
+        )
     data = r.content
     return data
 
@@ -35,7 +32,9 @@ def get_metadados(
     if c is not None:
         r = c.get(url_metadados, headers=HTTP_HEADERS)
     else:
-        r = httpx.get(url_metadados, headers=HTTP_HEADERS, verify=False)
+        r = httpx.get(
+            url_metadados, headers=HTTP_HEADERS, timeout=TIMEOUT, verify=False
+        )
     data = r.content
     return data
 
@@ -50,7 +49,7 @@ def get_periodos(
     if c is not None:
         r = c.get(url_periodos, headers=HTTP_HEADERS)
     else:
-        r = httpx.get(url_periodos, headers=HTTP_HEADERS, verify=False)
+        r = httpx.get(url_periodos, headers=HTTP_HEADERS, timeout=TIMEOUT, verify=False)
     data = r.content
     return data
 
@@ -63,7 +62,7 @@ def get_localidades(
     url_localidades = url.localidades(agregado_id, localidades_nivel)
     logger.info(f"Downloading agregado localidades {url_localidades}")
     if c is not None:
-        r = c.get(url_localidades, headers=HTTP_HEADERS, timeout=TIMEOUT)
+        r = c.get(url_localidades, headers=HTTP_HEADERS)
     else:
         r = httpx.get(
             url_localidades, headers=HTTP_HEADERS, timeout=TIMEOUT, verify=False

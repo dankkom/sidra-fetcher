@@ -1,12 +1,11 @@
 import logging
 from queue import Queue
 
-# import httpx
-
-from ibge_sidra_fetcher import utils, storage, stats, fetcher
+from ibge_sidra_fetcher import fetcher, stats, storage, utils
 from ibge_sidra_fetcher.config import DATA_DIR
-from ibge_sidra_fetcher.sidra import Agregado
-from ibge_sidra_fetcher.sidra import Parametro
+from ibge_sidra_fetcher.sidra import Agregado, Parametro
+
+# import httpx
 
 
 def main():
@@ -41,16 +40,12 @@ def main():
                 if dest_filepath.exists():
                     continue
                 localidade_nivel = sorted(
-                    set(
-                        loc.id_nivel.strip("N")
-                        for loc in agregado.localidades
-                    )
+                    set(loc.id_nivel.strip("N") for loc in agregado.localidades)
                 )
                 parameter = Parametro(
                     aggregate=str(agregado.id),
                     territories={
-                        loc_nivel_id: ["all"]
-                        for loc_nivel_id in localidade_nivel
+                        loc_nivel_id: ["all"] for loc_nivel_id in localidade_nivel
                     },
                     variables=["all"],
                     periods=[str(periodo.id)],

@@ -1,21 +1,21 @@
 from pathlib import Path
 from typing import Generator
 
-from .api.sidra.agregado import Agregado, Localidade, Periodo, Variavel
+from .api.agregados.agregado import Agregado, Localidade, Periodo, Variavel
 from .api.sidra.parametro import Parametro
 from .stats import calculate_aggregate
-from .storage import io, locus, raw
+from . import storage
 
 SIZE_THRESHOLD = 50_000
 
 
 def iter_sidra_agregados(datadir: Path) -> Generator[Agregado, None, None]:
-    sidra_agregados = raw.read_json(datadir / "sidra-agregados.json")
+    sidra_agregados = storage.read_json(datadir / "sidra-agregados.json")
     for pesquisa in sidra_agregados:
         pesquisa_id = pesquisa["id"]
         for agregado in pesquisa["agregados"]:
-            agregado_id = int(agregado["id"])
-            yield io.read_metadados(
+            agregado_id = agregado["id"]
+            yield storage.read_metadados(
                 datadir=datadir,
                 pesquisa_id=pesquisa_id,
                 agregado_id=agregado_id,
@@ -83,7 +83,7 @@ def iter_tasks_agregado_periodo_localidade(
             localidade=localidade,
             variavel=variavel,
         )
-        dest_filepath = locus.data_filepath(
+        dest_filepath = storage.data_filepath(
             datadir=datadir,
             pesquisa_id=agregado.pesquisa.id,
             agregado_id=agregado.id,
@@ -99,7 +99,7 @@ def iter_tasks_agregado_periodo(
 ) -> Generator[tuple[str, Path], None, None]:
     for localidade in agregado.localidades:
         parameter = get_parameter_localidade(agregado=agregado, periodo=periodo)
-        dest_filepath = locus.data_filepath(
+        dest_filepath = storage.data_filepath(
             datadir=datadir,
             pesquisa_id=agregado.pesquisa.id,
             agregado_id=agregado.id,
@@ -114,7 +114,7 @@ def iter_tasks_agregado(
     agregado: Agregado,
 ) -> Generator[tuple[str, Path], None, None]:
     for periodo in agregado.periodos:
-        dest_filepath = locus.data_filepath(
+        dest_filepath = storage.data_filepath(
             datadir=datadir,
             pesquisa_id=agregado.pesquisa.id,
             agregado=agregado,
@@ -150,3 +150,23 @@ def iter_tasks(datadir) -> Generator[tuple[str, Path], None, None]:
                     )
         else:
             print("Too large!")
+
+
+def unnest_classificacoes(
+    classificacoes: list[dict],
+    data: dict[str, str] = None,
+) -> Generator[dict[str, str], None, None]:
+    """Recursively list all classifications and categories"""
+    if data is None:
+        data = {}
+    for i, classificacao in enumerate(classificacoes, 1):
+        classificacao_id = classificacao["id"]
+        for categoria in classificacao["categorias"]:
+            categoria_id = str(categoria["id"])
+            if categoria_id == "0":
+                continue
+            data[f"{classificacao_id}"] = categoria_id
+            if len(classificacoes) == 1:
+                yield dict(**data)
+            else:
+                yield from unnest_classificacoes(classificacoes[i:], data)

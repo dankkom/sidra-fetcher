@@ -1,19 +1,67 @@
+"""
+
+File structure:
+
+DATA_DIR/
+    sidra-agregados.json
+    <pesquisa_id>/
+        agregado-<agregado_id>/
+            metadata/
+                metadados.json
+                periodos.json
+                localidades-<localidades_nivel_id*>.json
+            <agregado_id>_<periodo_id>_<modificacao>.json
+            <agregado_id>_<periodo_id>_<modificacao>.json
+            ...
+        agregado-<agregado_id>/
+            metadata/
+                metadados.json
+                periodos.json
+                localidades-<localidades_nivel_id*>.json
+            <agregado_id>_<periodo_id>_<modificacao>.json
+            <agregado_id>_<periodo_id>_<modificacao>.json
+            ...
+        ...
+    <pesquisa_id>/
+        agregado-<agregado_id>/
+            metadata/
+                metadados.json
+                periodos.json
+                localidades-<localidades_nivel_id*>.json
+            <agregado_id>_<periodo_id>_<modificacao>.json
+            <agregado_id>_<periodo_id>_<modificacao>.json
+            ...
+        agregado-<agregado_id>/
+            metadata/
+                metadados.json
+                periodos.json
+                localidades-<localidades_nivel_id*>.json
+            <agregado_id>_<periodo_id>_<modificacao>.json
+            <agregado_id>_<periodo_id>_<modificacao>.json
+            ...
+        ...
+    ...
+
+"""
+
 import datetime as dt
 import json
-import logging
 from pathlib import Path
 
-from .api.sidra.agregado import (
+from .api.agregados.agregado import (
     Agregado,
     Categoria,
     Classificacao,
+    ClassificacaoSumarizacao,
     Localidade,
+    LocalidadeNivel,
+    NivelTerritorial,
+    Periodicidade,
     Periodo,
     Pesquisa,
     Variavel,
 )
-
-logger = logging.getLogger(__name__)
+from . import logger
 
 
 # IO --------------------------------------------------------------------------
@@ -23,7 +71,7 @@ def read_periodos(filepath: Path) -> list[Periodo]:
     parse_modificacao = lambda x: dt.datetime.strptime(x, "%d/%m/%Y").date()
     for per in read_json(filepath):
         p = Periodo(
-            id=int(per["id"]),
+            id=per["id"],
             literals=per["literals"],
             modificacao=parse_modificacao(per["modificacao"]),
         )
@@ -36,10 +84,9 @@ def read_localidades(filepath: Path) -> list[Localidade]:
     localidades = []
     for loc in read_json(filepath):
         l = Localidade(
-            id=int(loc["id"]),
+            id=loc["id"],
             nome=loc["nome"],
-            id_nivel=loc["nivel"]["id"],
-            nome_nivel=loc["nivel"]["nome"],
+            nivel=LocalidadeNivel(**loc["nivel"]),
         )
         localidades.append(l)
     return localidades
@@ -68,25 +115,47 @@ def read_metadados(datadir: Path, pesquisa_id: str, agregado_id: int) -> Agregad
         ),
     }
 
+    if not files["metadados"].exists():
+        return
+
     localidades = []
     for f in files["localidades"]:
-        localidades.extend(read_localidades(f))
-    periodos = read_periodos(files["periodos"])
+        if f.exists():
+            localidades.extend(read_localidades(f))
+
+    periodos = read_periodos(files["periodos"]) if files["periodos"].exists() else []
+
     data = read_json(files["metadados"])
+
+    nivel_territorial = NivelTerritorial(
+        administrativo=data["nivelTerritorial"]["Administrativo"],
+        especial=data["nivelTerritorial"]["Especial"],
+        ibge=data["nivelTerritorial"]["IBGE"],
+    )
+
     variaveis = [
-        Variavel(id=int(v["id"]), nome=v["nome"], unidade=v["unidade"])
+        Variavel(
+            id=v["id"],
+            nome=v["nome"],
+            unidade=v["unidade"],
+            sumarizacao=v["sumarizacao"],
+        )
         for v in data["variaveis"]
     ]
     classificacoes = [
         Classificacao(
             id=cla["id"],
             nome=cla["nome"],
+            sumarizacao=ClassificacaoSumarizacao(
+                status=cla["sumarizacao"]["status"],
+                excecao=cla["sumarizacao"]["excecao"],
+            ),
             categorias=[
                 Categoria(
-                    id=int(cat["id"]),
+                    id=cat["id"],
                     nome=cat["nome"],
                     unidade=cat["unidade"],
-                    nivel=int(cat["nivel"]),
+                    nivel=cat["nivel"],
                 )
                 for cat in cla["categorias"]
             ],
@@ -94,12 +163,13 @@ def read_metadados(datadir: Path, pesquisa_id: str, agregado_id: int) -> Agregad
         for cla in data["classificacoes"]
     ]
     a = Agregado(
-        id=int(data["id"]),
+        id=data["id"],
         nome=data["nome"],
         url=data["URL"],
         pesquisa=Pesquisa(id=pesquisa_id, nome=data["pesquisa"]),
         assunto=data["assunto"],
-        periodicidade_frequencia=data["periodicidade"]["frequencia"],
+        periodicidade=Periodicidade(**data["periodicidade"]),
+        nivel_territorial=nivel_territorial,
         variaveis=variaveis,
         classificacoes=classificacoes,
         periodos=periodos,
@@ -177,6 +247,26 @@ def agregado_localidades_filepath(
         agregado_id,
     )
     return metadata_dir / f"localidades-{localidades_nivel.lower()}.json"
+
+
+def get_filename(
+    sidra_tabela: str,
+    periodo: str,
+    territorial_level: str,
+    ibge_territorial_code: str,
+    variable: str = "allxp",
+    classifications: dict[str, str] = None,
+    data_modificacao: str = None,
+):
+    name = f"t-{sidra_tabela}_p-{periodo}"
+    name += f"_n{territorial_level}-{ibge_territorial_code}"
+    name += f"_v-{variable}"
+    if classifications is not None:
+        for classificacao, categoria in classifications.items():
+            name += f"_c{classificacao}-{categoria}"
+    name += f"@{data_modificacao}" if data_modificacao is not None else ""
+    name += ".json"
+    return name
 
 
 def data_filepath(
