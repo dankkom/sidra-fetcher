@@ -1,7 +1,7 @@
 from pathlib import Path
 from typing import Generator
 
-from . import storage
+from . import logger, storage
 from .api.agregados.agregado import Agregado, Localidade, Periodo, Variavel
 from .api.sidra.parametro import Parametro
 from .stats import calculate_aggregate
@@ -149,7 +149,7 @@ def iter_tasks(datadir) -> Generator[tuple[str, Path], None, None]:
                         localidade=localidade,
                     )
         else:
-            print("Too large!")
+            logger.warning("Too big!")
 
 
 def unnest_classificacoes(
