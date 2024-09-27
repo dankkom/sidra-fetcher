@@ -1,12 +1,30 @@
+import argparse
+from pathlib import Path
+
 import httpx
 
 from ibge_sidra_fetcher import config, fetcher, storage
 
 
+def get_args() -> argparse.Namespace:
+    parser = argparse.ArgumentParser()
+    parser.add_argument(
+        "--data-dir",
+        type=Path,
+        required=True,
+        help="Directory to store the fetched data",
+    )
+    return parser.parse_args()
+
+
 def main():
+    args = get_args()
+    data_dir = args.data_dir
+
     client = httpx.Client(timeout=config.TIMEOUT)
 
-    sidra_agregados_filepath = storage.sidra_agregados_filepath(datadir=config.DATA_DIR)
+    # sidra_agregados_filepath = storage.sidra_agregados_filepath(datadir=config.DATA_DIR)
+    sidra_agregados_filepath = storage.sidra_agregados_filepath(data_dir=data_dir)
 
     # Fetch and store the list of surveys if it doesn't exist
     if not sidra_agregados_filepath.exists():
@@ -23,7 +41,7 @@ def main():
             agregado_id = agregado["id"]
 
             agregados_metadados_filepath = storage.agregado_metadados_filepath(
-                datadir=config.DATA_DIR,
+                data_dir=data_dir,
                 pesquisa_id=pesquisa_id,
                 agregado_id=agregado_id,
             )

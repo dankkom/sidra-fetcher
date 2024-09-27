@@ -1,5 +1,23 @@
+import argparse
 import subprocess
 from pathlib import Path
+
+
+def get_args() -> argparse.Namespace:
+    parser = argparse.ArgumentParser()
+    parser.add_argument(
+        "--data-dir",
+        type=Path,
+        required=True,
+        help="Directory to store the fetched data",
+    )
+    parser.add_argument(
+        "--dest-dir",
+        type=Path,
+        required=True,
+        help="Directory to store the compressed data",
+    )
+    return parser.parse_args()
 
 
 def compress_survey_directory(survey_directory: Path, dest_dir: Path):
@@ -21,8 +39,10 @@ def compress_survey_directory(survey_directory: Path, dest_dir: Path):
 
 
 def main():
-    data_dir = Path()
-    dest_dir = Path("/run/media/dk/D0B5-F499/data/raw/ibge/sidra")
+    args = get_args()
+    data_dir = args.data_dir
+    dest_dir = args.dest_dir
+
     survey_dirs = list(data_dir.glob("*/"))
     for survey_dir in survey_dirs:
         compress_survey_directory(survey_dir, dest_dir)

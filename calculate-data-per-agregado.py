@@ -1,9 +1,25 @@
+import argparse
+from pathlib import Path
+
 from ibge_sidra_fetcher import stats, utils
-from ibge_sidra_fetcher.config import DATA_DIR
+
+
+def get_args() -> argparse.Namespace:
+    parser = argparse.ArgumentParser()
+    parser.add_argument(
+        "--data-dir",
+        type=Path,
+        required=True,
+        help="Directory to store the fetched data",
+    )
+    return parser.parse_args()
 
 
 def main():
-    for i, agregado in enumerate(utils.iter_sidra_agregados(DATA_DIR), 1):
+    args = get_args()
+    data_dir = args.data_dir
+
+    for i, agregado in enumerate(utils.iter_sidra_agregados(data_dir), 1):
         if not agregado:
             continue
 
