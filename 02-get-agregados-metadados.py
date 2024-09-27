@@ -1,6 +1,7 @@
 import queue
 
-from ibge_sidra_fetcher import config, fetcher, storage
+from ibge_sidra_fetcher import dispatcher, fetcher, storage
+
 
 
 def main():
@@ -18,9 +19,9 @@ def main():
         pesquisa_id = pesquisa["id"]
         for agregado in pesquisa["agregados"]:
             agregado_id = agregado["id"]
-            task = fetcher.metadados(pesquisa_id, agregado_id)
+            task = dispatcher.metadados(data_dir, pesquisa_id, agregado_id)
             q.put(task)
-            task = fetcher.periodos(pesquisa_id, agregado_id)
+            task = dispatcher.periodos(data_dir, pesquisa_id, agregado_id)
             q.put(task)
     q.join()
 
