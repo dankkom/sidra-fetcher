@@ -4,12 +4,8 @@ from queue import Queue
 from threading import Thread
 
 import httpx
-from tenacity import retry
-from tenacity.stop import stop_after_attempt
-from tenacity.wait import wait_exponential
 
 from . import api, logger
-from .config import HTTP_HEADERS
 from .storage import write_data
 
 
@@ -40,10 +36,6 @@ class Fetcher(Thread):
 
 
 # GET -------------------------------------------------------------------------
-@retry(
-    stop=stop_after_attempt(10),
-    wait=wait_exponential(multiplier=2, min=10, max=120),
-)
 def get(
     url: str,
     client: httpx.Client,
@@ -51,9 +43,9 @@ def get(
     logger.info(f"Downloading DATA {url}")
     t0 = time.time()
     data = b""
-    with client.stream("GET", url, headers=HTTP_HEADERS, verify=False) as r:
+    with client.stream("GET", url) as r:
         if r.status_code != 200:
-            raise ConnectionError(f"Error status code {r.status_code}\n{r.text}")
+            raise ConnectionError(f"Error status code {r.status_code}")
         for chunk in r.iter_bytes():
             data += chunk
     if data is None:
@@ -63,10 +55,6 @@ def get(
     return data
 
 
-@retry(
-    stop=stop_after_attempt(10),
-    wait=wait_exponential(multiplier=2, min=10, max=120),
-)
 def sidra_agregados(client: httpx.Client) -> bytes:
     data = api.agregados.handler.get_agregados(client)
     return data
@@ -77,10 +65,6 @@ def sidra_agregados_metadados(agregado_id: int, client: httpx.Client) -> bytes:
     return data
 
 
-@retry(
-    stop=stop_after_attempt(10),
-    wait=wait_exponential(multiplier=2, min=10, max=120),
-)
 def sidra_data(
     sidra_url: str,
     client: httpx.Client = None,
