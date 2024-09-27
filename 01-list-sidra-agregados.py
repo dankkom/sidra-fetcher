@@ -1,9 +1,10 @@
 import argparse
+import queue
 from pathlib import Path
 
 import httpx
 
-from ibge_sidra_fetcher import config, fetcher, storage
+from ibge_sidra_fetcher import config, dispatcher, fetcher, storage
 
 
 def get_args() -> argparse.Namespace:
@@ -34,27 +35,20 @@ def main():
     # Read the list of surveys
     sidra_agregados_data = storage.read_json(sidra_agregados_filepath)
 
+    q = queue.Queue()
+    for _ in range(4):
+        worker = fetcher.Fetcher(q=q)
+        worker.start()
+
     # Fetch and store the metadata of each agregado
     for pesquisa in sidra_agregados_data:
         pesquisa_id = pesquisa["id"]
         for agregado in pesquisa["agregados"]:
             agregado_id = agregado["id"]
+            task = dispatcher.metadados(data_dir, pesquisa_id, agregado_id)
+            q.put(task)
 
-            agregados_metadados_filepath = storage.agregado_metadados_filepath(
-                data_dir=data_dir,
-                pesquisa_id=pesquisa_id,
-                agregado_id=agregado_id,
-            )
-            if agregados_metadados_filepath.exists():
-                continue
-
-            agregados_metadados_data = fetcher.sidra_agregados_metadados(
-                agregado_id=agregado_id, client=client
-            )
-
-            storage.write_data(agregados_metadados_data, agregados_metadados_filepath)
-
-            print(f"{pesquisa_id}/{agregado_id}")
+    q.join()
 
 
 if __name__ == "__main__":
