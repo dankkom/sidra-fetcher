@@ -1,10 +1,12 @@
 import time
+
 import httpx
 from tenacity import retry
 from tenacity.stop import stop_after_attempt
 from tenacity.wait import wait_exponential
-from ..config import HTTP_HEADERS, TIMEOUT
+
 from .. import logger
+from ..config import HTTP_HEADERS, TIMEOUT
 
 
 @retry(

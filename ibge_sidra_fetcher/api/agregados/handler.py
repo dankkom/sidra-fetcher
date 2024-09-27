@@ -3,9 +3,9 @@ from tenacity import retry
 from tenacity.stop import stop_after_attempt
 from tenacity.wait import wait_exponential
 
+from ... import logger
 from ...config import HTTP_HEADERS, TIMEOUT
 from . import url
-from ... import logger
 
 
 @retry(stop=stop_after_attempt(3))

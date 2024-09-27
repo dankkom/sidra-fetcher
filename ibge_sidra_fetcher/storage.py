@@ -48,6 +48,7 @@ import datetime as dt
 import json
 from pathlib import Path
 
+from . import logger
 from .api.agregados.agregado import (
     Agregado,
     Categoria,
@@ -61,7 +62,6 @@ from .api.agregados.agregado import (
     Pesquisa,
     Variavel,
 )
-from . import logger
 
 
 # IO --------------------------------------------------------------------------
@@ -92,24 +92,24 @@ def read_localidades(filepath: Path) -> list[Localidade]:
     return localidades
 
 
-def read_metadados(datadir: Path, pesquisa_id: str, agregado_id: int) -> Agregado:
+def read_metadados(data_dir: Path, pesquisa_id: str, agregado_id: int) -> Agregado:
     logger.debug(f"Reading Metadata {pesquisa_id}/{agregado_id}")
 
     files = {
         "metadados": agregado_metadados_filepath(
-            datadir=datadir,
+            data_dir=data_dir,
             pesquisa_id=pesquisa_id,
             agregado_id=agregado_id,
         ),
         "localidades": list(
             agregado_metadata_dir(
-                datadir=datadir,
+                data_dir=data_dir,
                 pesquisa_id=pesquisa_id,
                 agregado_id=agregado_id,
             ).glob("localidades-*.json")
         ),
         "periodos": agregado_periodos_filepath(
-            datadir=datadir,
+            data_dir=data_dir,
             pesquisa_id=pesquisa_id,
             agregado_id=agregado_id,
         ),
@@ -185,34 +185,34 @@ def read_metadados(datadir: Path, pesquisa_id: str, agregado_id: int) -> Agregad
 # DATA_DIR/<pesquisa_id>/agregado-<agregado_id>/localidades-<localidades_nivel_id*>.json
 
 
-def sidra_agregados_filepath(datadir: Path) -> Path:
-    return datadir / "sidra-agregados.json"
+def sidra_agregados_filepath(data_dir: Path) -> Path:
+    return data_dir / "sidra-agregados.json"
 
 
-def pesquisa_dir(datadir: Path, pesquisa_id: str) -> Path:
-    return datadir / pesquisa_id.lower()
+def pesquisa_dir(data_dir: Path, pesquisa_id: str) -> Path:
+    return data_dir / pesquisa_id.lower()
 
 
-def agregado_dir(datadir: Path, pesquisa_id: str, agregado_id: int) -> Path:
-    return pesquisa_dir(datadir, pesquisa_id) / f"agregado-{agregado_id:05}"
+def agregado_dir(data_dir: Path, pesquisa_id: str, agregado_id: int) -> Path:
+    return pesquisa_dir(data_dir, pesquisa_id) / f"agregado-{agregado_id:05}"
 
 
 def agregado_metadata_dir(
-    datadir: Path,
+    data_dir: Path,
     pesquisa_id: str,
     agregado_id: int,
 ) -> Path:
-    return agregado_dir(datadir, pesquisa_id, agregado_id) / "metadata"
+    return agregado_dir(data_dir, pesquisa_id, agregado_id) / "metadata"
 
 
 def agregado_metadados_filepath(
-    datadir: Path,
+    data_dir: Path,
     pesquisa_id: str,
     agregado_id: int,
 ) -> Path:
     return (
         agregado_metadata_dir(
-            datadir,
+            data_dir,
             pesquisa_id,
             agregado_id,
         )
@@ -221,13 +221,13 @@ def agregado_metadados_filepath(
 
 
 def agregado_periodos_filepath(
-    datadir: Path,
+    data_dir: Path,
     pesquisa_id: str,
     agregado_id: int,
 ) -> Path:
     return (
         agregado_metadata_dir(
-            datadir,
+            data_dir,
             pesquisa_id,
             agregado_id,
         )
@@ -236,13 +236,13 @@ def agregado_periodos_filepath(
 
 
 def agregado_localidades_filepath(
-    datadir: Path,
+    data_dir: Path,
     pesquisa_id: str,
     agregado_id: int,
     localidades_nivel: str,
 ) -> Path:
     metadata_dir = agregado_metadata_dir(
-        datadir,
+        data_dir,
         pesquisa_id,
         agregado_id,
     )
@@ -270,7 +270,7 @@ def get_filename(
 
 
 def data_filepath(
-    datadir: Path,
+    data_dir: Path,
     pesquisa_id: str,
     agregado_id: int,
     periodo_id: int,
@@ -278,7 +278,7 @@ def data_filepath(
     localidade_id: int = None,
     variavel_id: int = None,
 ) -> Path:
-    d = agregado_dir(datadir, pesquisa_id, agregado_id)
+    d = agregado_dir(data_dir, pesquisa_id, agregado_id)
     partition = [f"{periodo_id}"]
     if localidade_id:
         partition.append(f"{localidade_id}")

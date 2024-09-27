@@ -1,23 +1,11 @@
-import logging
 from queue import Queue
 
 from ibge_sidra_fetcher import fetcher, stats, storage, utils
 from ibge_sidra_fetcher.config import DATA_DIR
 from ibge_sidra_fetcher.sidra import Agregado, Parametro
 
-# import httpx
-
 
 def main():
-
-    logger = logging.getLogger("ibge_sidra_fetcher")
-    logger.setLevel(logging.DEBUG)
-    handler = logging.StreamHandler()
-    handler.setLevel(logging.DEBUG)
-    formatter = logging.Formatter("%(asctime)s %(msg)s")
-    handler.setFormatter(formatter)
-    logger.addHandler(handler)
-
     q = Queue()
     for _ in range(4):
         ftchr = fetcher.Fetcher(q=q, data_dir=DATA_DIR)
