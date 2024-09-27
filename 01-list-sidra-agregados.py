@@ -4,7 +4,7 @@ from pathlib import Path
 
 import httpx
 
-from ibge_sidra_fetcher import config, dispatcher, fetcher, storage
+from ibge_sidra_fetcher import config, fetcher, storage
 
 
 def get_args() -> argparse.Namespace:
@@ -22,33 +22,35 @@ def main():
     args = get_args()
     data_dir = args.data_dir
 
-    client = httpx.Client(timeout=config.TIMEOUT)
-
     # sidra_agregados_filepath = storage.sidra_agregados_filepath(datadir=config.DATA_DIR)
     sidra_agregados_filepath = storage.sidra_agregados_filepath(data_dir=data_dir)
 
     # Fetch and store the list of surveys if it doesn't exist
     if not sidra_agregados_filepath.exists():
+        client = httpx.Client(timeout=config.TIMEOUT)
         sidra_agregados_data = fetcher.sidra_agregados(client=client)
         storage.write_data(sidra_agregados_data, sidra_agregados_filepath)
+        client.close()
 
     # Read the list of surveys
     sidra_agregados_data = storage.read_json(sidra_agregados_filepath)
 
-    q = queue.Queue()
-    for _ in range(4):
-        worker = fetcher.Fetcher(q=q)
-        worker.start()
+    counts = {}
 
     # Fetch and store the metadata of each agregado
     for pesquisa in sidra_agregados_data:
         pesquisa_id = pesquisa["id"]
+        counts[pesquisa_id] = 0
         for agregado in pesquisa["agregados"]:
             agregado_id = agregado["id"]
-            task = dispatcher.metadados(data_dir, pesquisa_id, agregado_id)
-            q.put(task)
+            agregado_nome = agregado["nome"]
+            print(pesquisa_id, agregado_id, agregado_nome)
+            counts[pesquisa_id] += 1
 
-    q.join()
+    for pesquisa_id, count in counts.items():
+        print(pesquisa_id, count)
+
+    print(f"Total: {sum(counts.values())}")
 
 
 if __name__ == "__main__":
