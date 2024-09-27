@@ -35,6 +35,8 @@ def main():
             agregado_metadados_filepath = storage.agregado_metadados_filepath(
                 data_dir, pesquisa_id, agregado_id
             )
+            if not agregado_metadados_filepath.exists():
+                continue
             agregado_metadados = storage.read_json(agregado_metadados_filepath)
             for task in dispatcher.agregado_localidades(data_dir, pesquisa_id, agregado_metadados):
                 if task["dest_filepath"].exists():
