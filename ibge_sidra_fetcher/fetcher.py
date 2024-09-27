@@ -32,8 +32,7 @@ class Fetcher(Thread):
                 logger.debug(f"Download of {url} took {t1 - t0:.2f} seconds")
                 write_data(data, dest_filepath)
             except Exception as e:
-                print("Error", e)
-                print("Error", url)
+                logger.exception("Error %s %s", e, url)
                 time.sleep(2 * random.random())
             finally:
                 self.q.task_done()
