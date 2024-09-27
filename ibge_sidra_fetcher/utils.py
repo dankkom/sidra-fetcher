@@ -1,10 +1,10 @@
 from pathlib import Path
 from typing import Generator
 
+from . import storage
 from .api.agregados.agregado import Agregado, Localidade, Periodo, Variavel
 from .api.sidra.parametro import Parametro
 from .stats import calculate_aggregate
-from . import storage
 
 SIZE_THRESHOLD = 50_000
 
@@ -16,7 +16,7 @@ def iter_sidra_agregados(datadir: Path) -> Generator[Agregado, None, None]:
         for agregado in pesquisa["agregados"]:
             agregado_id = agregado["id"]
             yield storage.read_metadados(
-                datadir=datadir,
+                data_dir=datadir,
                 pesquisa_id=pesquisa_id,
                 agregado_id=agregado_id,
             )
@@ -84,7 +84,7 @@ def iter_tasks_agregado_periodo_localidade(
             variavel=variavel,
         )
         dest_filepath = storage.data_filepath(
-            datadir=datadir,
+            data_dir=datadir,
             pesquisa_id=agregado.pesquisa.id,
             agregado_id=agregado.id,
             periodo_id=periodo.id,
@@ -100,7 +100,7 @@ def iter_tasks_agregado_periodo(
     for localidade in agregado.localidades:
         parameter = get_parameter_localidade(agregado=agregado, periodo=periodo)
         dest_filepath = storage.data_filepath(
-            datadir=datadir,
+            data_dir=datadir,
             pesquisa_id=agregado.pesquisa.id,
             agregado_id=agregado.id,
             periodo_id=periodo.id,
@@ -115,7 +115,7 @@ def iter_tasks_agregado(
 ) -> Generator[tuple[str, Path], None, None]:
     for periodo in agregado.periodos:
         dest_filepath = storage.data_filepath(
-            datadir=datadir,
+            data_dir=datadir,
             pesquisa_id=agregado.pesquisa.id,
             agregado=agregado,
             periodo=periodo,
