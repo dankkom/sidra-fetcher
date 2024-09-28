@@ -42,7 +42,7 @@ def main():
         pesquisa_id = pesquisa["id"]
         counts[pesquisa_id] = 0
         for agregado in pesquisa["agregados"]:
-            agregado_id = agregado["id"]
+            agregado_id = int(agregado["id"])
             agregado_nome = agregado["nome"]
             print(pesquisa_id, agregado_id, agregado_nome)
             counts[pesquisa_id] += 1

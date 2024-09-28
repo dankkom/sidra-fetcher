@@ -26,7 +26,7 @@ def main():
         n = stats.calculate_aggregate(agregado)
         msg = [
             f"{i: >6}",
-            f"{n['pesquisa_id']}-{n['agregado_id']: <5}",
+            f"{n['pesquisa_id']}-{n['agregado_id']:05}",
             f"Localidades: {n['n_niveis_territoriais']: >2}:{n['n_localidades']: <5}",
             f"Variaveis: {n['n_variaveis']: >4}",
             f"Dimensões: {n['n_classificacoes']: >2}:{n['n_dimensoes']: <7}",

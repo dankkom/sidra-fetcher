@@ -31,7 +31,7 @@ def main():
     for pesquisa in sidra_agregados_data:
         pesquisa_id = pesquisa["id"]
         for agregado in pesquisa["agregados"]:
-            agregado_id = agregado["id"]
+            agregado_id = int(agregado["id"])
             agregado_metadados_filepath = storage.agregado_metadados_filepath(
                 data_dir, pesquisa_id, agregado_id
             )
@@ -41,7 +41,7 @@ def main():
             for task in dispatcher.agregado_localidades(data_dir, pesquisa_id, agregado_metadados):
                 if task["dest_filepath"].exists():
                     continue
-                print("Task localidades:", pesquisa_id, agregado_id)
+                print(f"Task localidades: {pesquisa_id}/{agregado_id:05}")
                 q.put(task)
     q.join()
 
