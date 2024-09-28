@@ -194,7 +194,7 @@ def pesquisa_dir(data_dir: Path, pesquisa_id: str) -> Path:
 
 
 def agregado_dir(data_dir: Path, pesquisa_id: str, agregado_id: int) -> Path:
-    return pesquisa_dir(data_dir, pesquisa_id) / f"agregado-{agregado_id:05}"
+    return pesquisa_dir(data_dir, pesquisa_id) / f"agregado-{agregado_id:0>5}"
 
 
 def agregado_metadata_dir(
