@@ -41,7 +41,7 @@ def main():
             for task in dispatcher.agregado_localidades(data_dir, pesquisa_id, agregado_metadados):
                 if task["dest_filepath"].exists():
                     continue
-                print("Task metadados:", pesquisa_id, agregado_id)
+                print("Task localidades:", pesquisa_id, agregado_id)
                 q.put(task)
     q.join()
 

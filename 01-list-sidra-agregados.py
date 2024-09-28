@@ -22,7 +22,7 @@ def main():
     args = get_args()
     data_dir = args.data_dir
 
-    # sidra_agregados_filepath = storage.sidra_agregados_filepath(datadir=config.DATA_DIR)
+    # sidra_agregados_filepath = storage.sidra_agregados_filepath(data_dir=config.DATA_DIR)
     sidra_agregados_filepath = storage.sidra_agregados_filepath(data_dir=data_dir)
 
     # Fetch and store the list of surveys if it doesn't exist

@@ -2,7 +2,7 @@ from queue import Queue
 
 from ibge_sidra_fetcher import fetcher, stats, storage, utils
 from ibge_sidra_fetcher.config import DATA_DIR
-from ibge_sidra_fetcher.sidra import Agregado, Parametro
+from ibge_sidra_fetcher.api.sidra import Agregado, Parametro
 
 
 def main():
@@ -18,8 +18,8 @@ def main():
             if tamanho_periodo > 50_000:
                 ...
             else:
-                dest_filepath = storage.get_filepath(
-                    datadir=DATA_DIR,
+                dest_filepath = storage.data_filepath(
+                    data_dir=DATA_DIR,
                     pesquisa_id=agregado.pesquisa.id,
                     agregado_id=agregado.id,
                     periodo_id=periodo.id,
@@ -99,7 +99,7 @@ def main():
     #                 f"{tamanho_periodo: >9} 😃",
     #             )
     #             dest_filepath = storage.get_filepath(
-    #                 datadir=DATA_DIR,
+    #                 data_dir=DATA_DIR,
     #                 pesquisa_id=agregado.pesquisa.id,
     #                 agregado_id=agregado.id,
     #                 periodo_id=periodo.id,
