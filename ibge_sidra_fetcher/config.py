@@ -22,6 +22,7 @@ HTTP_HEADERS = {
     "User-Agent": USER_AGENT,
 }
 TIMEOUT = int(_config["DEFAULT"]["TIMEOUT"])
+SIDRA_API_LIMIT = 100_000
 
 
 def setup_logging(logger_name: str, log_filepath: Path | str) -> logging.Logger:
@@ -49,7 +50,7 @@ def setup_logging(logger_name: str, log_filepath: Path | str) -> logging.Logger:
     # Console log
     streamhandler = logging.StreamHandler()
     streamhandler.setFormatter(log_formatter)
-    streamhandler.setLevel(logging.DEBUG)
+    streamhandler.setLevel(logging.INFO)
     logger.addHandler(streamhandler)
 
     return logger
