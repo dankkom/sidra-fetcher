@@ -14,7 +14,7 @@ def iter_sidra_agregados(data_dir: Path) -> Generator[Agregado, None, None]:
     for pesquisa in sidra_agregados:
         pesquisa_id = pesquisa["id"]
         for agregado in pesquisa["agregados"]:
-            agregado_id = agregado["id"]
+            agregado_id = int(agregado["id"])
             yield storage.read_metadados(
                 data_dir=data_dir,
                 pesquisa_id=pesquisa_id,
