@@ -37,11 +37,6 @@ def main():
                 continue
             print("Task metadados:", pesquisa_id, agregado_id)
             q.put(task)
-            task = dispatcher.periodos(data_dir, pesquisa_id, agregado_id)
-            if task["dest_filepath"].exists():
-                continue
-            print(f"Task periodos: {pesquisa_id}/{agregado_id:05}")
-            q.put(task)
     q.join()
 
 
