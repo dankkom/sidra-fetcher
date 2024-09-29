@@ -1,16 +1,30 @@
+import argparse
 from queue import Queue
 
 from ibge_sidra_fetcher import fetcher, stats, storage, utils
-from ibge_sidra_fetcher.config import DATA_DIR
 from ibge_sidra_fetcher.api.sidra import Agregado, Parametro
 
 
+def get_args() -> argparse.Namespace:
+    parser = argparse.ArgumentParser()
+    parser.add_argument(
+        "--data-dir",
+        type=str,
+        default="data",
+        help="Data directory",
+    )
+    return parser.parse_args()
+
+
 def main():
+    args = get_args()
+    data_dir = args.data_dir
+
     q = Queue()
     for _ in range(4):
-        ftchr = fetcher.Fetcher(q=q, data_dir=DATA_DIR)
+        ftchr = fetcher.Fetcher(q=q, data_dir=data_dir)
         ftchr.start()
-    for agregado in utils.iter_sidra_agregados(DATA_DIR):
+    for agregado in utils.iter_sidra_agregados(data_dir):
         agregado: Agregado
         for periodo in agregado.periodos:
             m = stats.calculate_aggregate(agregado)
@@ -19,7 +33,7 @@ def main():
                 ...
             else:
                 dest_filepath = storage.data_filepath(
-                    data_dir=DATA_DIR,
+                    data_dir=data_dir,
                     pesquisa_id=agregado.pesquisa.id,
                     agregado_id=agregado.id,
                     periodo_id=periodo.id,
@@ -50,7 +64,7 @@ def main():
     # client = httpx.Client()
     # n = 0
     # n = 0
-    # for agregado in utils.iter_sidra_agregados(DATA_DIR):
+    # for agregado in utils.iter_sidra_agregados(data_dir):
     #     agregado: Agregado
     #     for periodo in agregado.periodos:
     #         m = stats.calculate_aggregate(agregado)
@@ -99,7 +113,7 @@ def main():
     #                 f"{tamanho_periodo: >9} 😃",
     #             )
     #             dest_filepath = storage.get_filepath(
-    #                 data_dir=DATA_DIR,
+    #                 data_dir=data_dir,
     #                 pesquisa_id=agregado.pesquisa.id,
     #                 agregado_id=agregado.id,
     #                 periodo_id=periodo.id,
