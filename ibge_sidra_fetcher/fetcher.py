@@ -61,7 +61,7 @@ def sidra_agregados(client: httpx.Client) -> bytes:
 
 
 def sidra_agregados_metadados(agregado_id: int, client: httpx.Client) -> bytes:
-    data = api.agregados.handler.get_metadados(agregado_id, client)
+    data = api.agregados.handler.get_agregado_metadados(agregado_id, client)
     return data
 
 

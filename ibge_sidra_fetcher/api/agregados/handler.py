@@ -23,7 +23,7 @@ def get_agregados(c: httpx.Client = None) -> bytes:
 
 
 @retry(stop=stop_after_attempt(3))
-def get_metadados(
+def get_agregado_metadados(
     agregado_id: int,
     c: httpx.Client = None,
 ) -> bytes:
@@ -40,7 +40,7 @@ def get_metadados(
 
 
 @retry(stop=stop_after_attempt(3), wait=wait_exponential(multiplier=1, min=3, max=30))
-def get_periodos(
+def get_agregado_periodos(
     agregado_id: int,
     c: httpx.Client = None,
 ) -> bytes:
@@ -54,7 +54,7 @@ def get_periodos(
     return data
 
 
-def get_localidades(
+def get_agregado_localidades(
     agregado_id: int,
     localidades_nivel: str,
     c: httpx.Client = None,
