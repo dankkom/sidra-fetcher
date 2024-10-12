@@ -6,6 +6,7 @@ from tenacity.wait import wait_exponential
 from ... import logger
 from ...config import HTTP_HEADERS, TIMEOUT
 from . import url
+from .agregado import Acervo
 
 
 @retry(stop=stop_after_attempt(3))
@@ -69,3 +70,22 @@ def get_agregado_localidades(
         )
     localidades = r.json()
     return localidades
+
+
+def get_acervo(
+    acervo_id: str,
+    c: httpx.Client = None,
+) -> bytes:
+    url_acervo = url.acervos(acervo_id)
+    logger.info(f"Downloading acervo {url_acervo}")
+    if c is not None:
+        r = c.get(url_acervo, headers=HTTP_HEADERS)
+    else:
+        r = httpx.get(
+            url_acervo,
+            headers=HTTP_HEADERS,
+            timeout=TIMEOUT,
+            verify=False,
+        )
+    acervo = r.json()
+    return acervo

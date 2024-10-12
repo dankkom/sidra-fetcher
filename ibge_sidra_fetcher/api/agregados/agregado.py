@@ -2,6 +2,7 @@
 
 import datetime as dt
 from dataclasses import dataclass
+from enum import StrEnum
 
 
 @dataclass
@@ -87,3 +88,12 @@ class Agregado:
     classificacoes: list[Classificacao]
     periodos: list[Periodo]
     localidades: list[Localidade]
+
+
+class Acervo(StrEnum):
+    ASSUNTO = "A"
+    CLASSIFICACAO = "C"
+    NIVELTERRITORIAL = "N"
+    PERIODO = "P"
+    PERIODICIDADE = "E"
+    VARIAVEL = "V"

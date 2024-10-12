@@ -87,3 +87,12 @@ def agregado_localidades(
             agregado_id=agregado_id,
             localidades_nivel=nivel,
         )
+
+
+def acervo(data_dir: Path, acervo: api.agregados.agregado.Acervo) -> dict[str, str | Path]:
+    url_acervo = api.agregados.url.acervos(acervo_id=acervo.value)
+    dest_filepath = data_dir / f"{acervo.value}.json"
+    return {
+        "url": url_acervo,
+        "dest_filepath": dest_filepath,
+    }
