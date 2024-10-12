@@ -5,7 +5,7 @@ from threading import Thread
 
 import httpx
 
-from . import api, logger
+from . import logger
 from .storage import write_data
 
 
@@ -52,23 +52,4 @@ def get(
         raise ConnectionError("Data returned is None!")
     t1 = time.time()
     logger.debug(f"Download of {url} took {t1 - t0:.2f} seconds")
-    return data
-
-
-def sidra_agregados(client: httpx.Client) -> bytes:
-    data = api.agregados.handler.get_agregados(client)
-    return data
-
-
-def sidra_agregados_metadados(agregado_id: int, client: httpx.Client) -> bytes:
-    data = api.agregados.handler.get_agregado_metadados(agregado_id, client)
-    return data
-
-
-def sidra_data(
-    sidra_url: str,
-    client: httpx.Client = None,
-) -> bytes:
-    logger.info(f"Downloading SIDRA {sidra_url}")
-    data = get(sidra_url, client)
     return data

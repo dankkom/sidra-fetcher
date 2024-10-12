@@ -1,10 +1,9 @@
 import argparse
-import queue
 from pathlib import Path
 
 import httpx
 
-from ibge_sidra_fetcher import config, fetcher, storage
+from ibge_sidra_fetcher import api, config, storage
 
 
 def get_args() -> argparse.Namespace:
@@ -28,7 +27,7 @@ def main():
     # Fetch and store the list of surveys if it doesn't exist
     if not sidra_agregados_filepath.exists():
         client = httpx.Client(timeout=config.TIMEOUT)
-        sidra_agregados_data = fetcher.sidra_agregados(client=client)
+        sidra_agregados_data = api.agregados.handler.get_agregados(client=client)
         storage.write_data(sidra_agregados_data, sidra_agregados_filepath)
         client.close()
 
