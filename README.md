@@ -1,25 +1,35 @@
-# Coletor de dados do SIDRA/IBGE
+# Metadados do IBGE
 
-Functions to request resources from IBGE's APIs
+Funções para solicitar recursos das APIs do IBGE.
 
-IBGE's APIs list:
+Lista de APIs de metadados do IBGE:
 
 - https://servicodados.ibge.gov.br/api/docs
+
+## API de Agregados
+
 - https://servicodados.ibge.gov.br/api/docs/agregados?versao=3
+
+### Acervos
+
+Recursos não documentados, mas que podem ser acessados:
+
+- Assuntos: https://servicodados.ibge.gov.br/api/v3/agregados?acervo=A
+- Classificações: https://servicodados.ibge.gov.br/api/v3/agregados?acervo=C
+- Nível Territorial: https://servicodados.ibge.gov.br/api/v3/agregados?acervo=N
+- Períodos: https://servicodados.ibge.gov.br/api/v3/agregados?acervo=P
+- Periodicidades: https://servicodados.ibge.gov.br/api/v3/agregados?acervo=E
+- Variáveis: https://servicodados.ibge.gov.br/api/v3/agregados?acervo=V
+
+## API do SIDRA
+
 - https://apisidra.ibge.gov.br
 - https://apisidra.ibge.gov.br/home/ajuda
 
-## Workflow
+## API de Metadados
 
-1. list-sidra-agregados (pesquisa_id, pesquisa_nome, agregado_id, agregado_nome)
-2. get-agregados-metadata
-3. get-periodos
-4. fetch-data
-5. archive
+- https://servicodados.ibge.gov.br/api/docs/metadados?versao=2
 
-## Dimensions
+## API de Pesquisas
 
-- nivelTerritorial
-- variaveis
-- classificacoes
-  - categorias
+- https://servicodados.ibge.gov.br/api/docs/pesquisas
