@@ -4,11 +4,11 @@ from queue import Queue
 from threading import Thread
 
 import httpx
-from tenacity.wait import wait_exponential
-
-from .api.agregados import url as url_builder
 from tenacity import retry
 from tenacity.stop import stop_after_attempt
+from tenacity.wait import wait_exponential
+
+import ibge_sidra_fetcher.api.agregados
 
 from . import logger
 from .storage import write_data
@@ -61,21 +61,21 @@ def get(
 
 @retry(stop=stop_after_attempt(3))
 def get_agregados(client: httpx.Client) -> bytes:
-    url_agregados = url_builder.agregados()
+    url_agregados = ibge_sidra_fetcher.api.agregados.build_url_agregados()
     logger.info(f"Downloading list of agregados metadata {url_agregados}")
     return get(url_agregados, client)
 
 
 @retry(stop=stop_after_attempt(3))
 def get_agregado_metadados(agregado_id: int, client: httpx.Client) -> bytes:
-    url_metadados = url_builder.metadados(agregado_id)
+    url_metadados = ibge_sidra_fetcher.api.agregados.build_url_metadados(agregado_id)
     logger.info(f"Downloading agregado metadados {url_metadados}")
     return get(url_metadados, client)
 
 
 @retry(stop=stop_after_attempt(3), wait=wait_exponential(multiplier=1, min=3, max=30))
 def get_agregado_periodos(agregado_id: int, client: httpx.Client) -> bytes:
-    url_periodos = url_builder.periodos(agregado_id)
+    url_periodos = ibge_sidra_fetcher.api.agregados.build_url_periodoso(agregado_id)
     logger.info(f"Downloading agregado periodos {url_periodos}")
     return get(url_periodos, client)
 
@@ -83,14 +83,16 @@ def get_agregado_periodos(agregado_id: int, client: httpx.Client) -> bytes:
 def get_agregado_localidades(
     agregado_id: int, localidades_nivel: str, client: httpx.Client
 ) -> bytes:
-    url_localidades = url_builder.localidades(agregado_id, localidades_nivel)
+    url_localidades = ibge_sidra_fetcher.api.agregados.build_url_localidades(
+        agregado_id, localidades_nivel
+    )
     logger.info(f"Downloading agregado localidades {url_localidades}")
     data = get(url_localidades, client)
     return data
 
 
 def get_acervo(acervo_id: str, client: httpx.Client) -> bytes:
-    url_acervo = url_builder.acervos(acervo_id)
+    url_acervo = ibge_sidra_fetcher.api.agregados.build_url_acervos(acervo_id)
     logger.info(f"Downloading acervo {url_acervo}")
     data = get(url_acervo, client)
     return data

@@ -2,8 +2,8 @@ from pathlib import Path
 from typing import Generator
 
 from . import logger, storage
-from .api.agregados.agregado import Agregado, Localidade, Periodo, Variavel
-from .api.sidra.parametro import Parametro
+from .api.agregados import Agregado, Localidade, Periodo, Variavel
+from .api.sidra import Parametro
 from .stats import calculate_aggregate
 
 SIZE_THRESHOLD = 50_000

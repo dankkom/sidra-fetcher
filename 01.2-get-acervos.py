@@ -4,7 +4,7 @@ from pathlib import Path
 import httpx
 
 from ibge_sidra_fetcher import dispatcher, fetcher, storage
-from ibge_sidra_fetcher.api.agregados.agregado import Acervo
+from ibge_sidra_fetcher.api.agregados import AcervoEnum
 
 
 def get_args() -> argparse.Namespace:
@@ -26,7 +26,7 @@ def main():
     args = get_args()
 
     with httpx.Client() as client:
-        for a in Acervo:
+        for a in AcervoEnum:
             task = dispatcher.acervo(args.data_dir, a)
             if task["dest_filepath"].exists() and not args.overwrite:
                 continue

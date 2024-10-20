@@ -3,7 +3,7 @@ from pathlib import Path
 
 import httpx
 
-from ibge_sidra_fetcher import fetcher, config, storage
+from ibge_sidra_fetcher import config, fetcher, storage
 
 
 def get_args() -> argparse.Namespace:

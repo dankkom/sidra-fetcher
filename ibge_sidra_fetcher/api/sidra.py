@@ -1,3 +1,9 @@
+"""API do SIDRA.
+
+Fonte: https://apisidra.ibge.gov.br | https://apisidra.ibge.gov.br/home/ajuda
+
+"""
+
 import re
 from typing import Any, Optional
 

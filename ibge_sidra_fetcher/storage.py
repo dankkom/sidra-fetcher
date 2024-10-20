@@ -49,13 +49,13 @@ import json
 from pathlib import Path
 
 from . import logger
-from .api.agregados.agregado import (
+from .api.agregados import (
     Agregado,
+    AgregadoNivelTerritorial,
     Categoria,
     Classificacao,
     ClassificacaoSumarizacao,
     Localidade,
-    LocalidadeNivel,
     NivelTerritorial,
     Periodicidade,
     Periodo,
@@ -86,7 +86,7 @@ def read_localidades(filepath: Path) -> list[Localidade]:
         l = Localidade(
             id=loc["id"],
             nome=loc["nome"],
-            nivel=LocalidadeNivel(**loc["nivel"]),
+            nivel=NivelTerritorial(**loc["nivel"]),
         )
         localidades.append(l)
     return localidades
@@ -124,7 +124,7 @@ def read_metadados(data_dir: Path, pesquisa_id: str, agregado_id: int) -> Agrega
 
     data = read_json(files["metadados"])
 
-    nivel_territorial = NivelTerritorial(
+    nivel_territorial = AgregadoNivelTerritorial(
         administrativo=data["nivelTerritorial"]["Administrativo"],
         especial=data["nivelTerritorial"]["Especial"],
         ibge=data["nivelTerritorial"]["IBGE"],

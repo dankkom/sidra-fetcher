@@ -2,7 +2,7 @@
 
 from functools import reduce
 
-from .api.agregados.agregado import Agregado
+from .api.agregados import Agregado
 
 
 def get_stat_localidades(agregado: Agregado) -> dict[str, int]:
