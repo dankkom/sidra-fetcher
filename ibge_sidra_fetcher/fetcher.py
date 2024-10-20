@@ -60,37 +60,37 @@ def get(
 
 
 @retry(stop=stop_after_attempt(3))
-def get_agregados(c: httpx.Client) -> bytes:
+def get_agregados(client: httpx.Client) -> bytes:
     url_agregados = url_builder.agregados()
     logger.info(f"Downloading list of agregados metadata {url_agregados}")
-    return get(url_agregados, c)
+    return get(url_agregados, client)
 
 
 @retry(stop=stop_after_attempt(3))
-def get_agregado_metadados(agregado_id: int, c: httpx.Client) -> bytes:
+def get_agregado_metadados(agregado_id: int, client: httpx.Client) -> bytes:
     url_metadados = url_builder.metadados(agregado_id)
     logger.info(f"Downloading agregado metadados {url_metadados}")
-    return get(url_metadados, c)
+    return get(url_metadados, client)
 
 
 @retry(stop=stop_after_attempt(3), wait=wait_exponential(multiplier=1, min=3, max=30))
-def get_agregado_periodos(agregado_id: int, c: httpx.Client) -> bytes:
+def get_agregado_periodos(agregado_id: int, client: httpx.Client) -> bytes:
     url_periodos = url_builder.periodos(agregado_id)
     logger.info(f"Downloading agregado periodos {url_periodos}")
-    return get(url_periodos, c)
+    return get(url_periodos, client)
 
 
 def get_agregado_localidades(
-    agregado_id: int, localidades_nivel: str, c: httpx.Client
+    agregado_id: int, localidades_nivel: str, client: httpx.Client
 ) -> bytes:
     url_localidades = url_builder.localidades(agregado_id, localidades_nivel)
     logger.info(f"Downloading agregado localidades {url_localidades}")
-    data = get(url_localidades, c)
+    data = get(url_localidades, client)
     return data
 
 
-def get_acervo(acervo_id: str, c: httpx.Client) -> bytes:
+def get_acervo(acervo_id: str, client: httpx.Client) -> bytes:
     url_acervo = url_builder.acervos(acervo_id)
     logger.info(f"Downloading acervo {url_acervo}")
-    data = get(url_acervo, c)
+    data = get(url_acervo, client)
     return data
