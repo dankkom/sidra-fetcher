@@ -13,35 +13,42 @@ def get_args() -> argparse.Namespace:
         required=True,
         help="Directory to store the fetched data",
     )
+    parser.add_argument(
+        "--overwrite",
+        action="store_true",
+    )
+    parser.add_argument(
+        "--threads",
+        type=int,
+        default=4,
+    )
     return parser.parse_args()
 
 
 def main():
     args = get_args()
-    data_dir = args.data_dir
 
-    sidra_agregados_filepath = storage.sidra_agregados_filepath(data_dir=data_dir)
-    sidra_agregados_data = storage.read_json(sidra_agregados_filepath)
+    agregados_filepath = storage.agregados_filepath(data_dir=args.data_dir)
+    agregados_data = storage.read_json(agregados_filepath)
 
     q = queue.Queue()
-    for _ in range(4):
+    for _ in range(args.threads):
         fetcher_worker = fetcher.Fetcher(q)
         fetcher_worker.start()
 
-    for pesquisa in sidra_agregados_data:
+    for pesquisa in agregados_data:
         pesquisa_id = pesquisa["id"]
         for agregado in pesquisa["agregados"]:
             agregado_id = int(agregado["id"])
             agregado_metadados_filepath = storage.agregado_metadados_filepath(
-                data_dir, pesquisa_id, agregado_id
+                args.data_dir, agregado_id
             )
             if not agregado_metadados_filepath.exists():
                 continue
             agregado_metadados = storage.read_json(agregado_metadados_filepath)
-            for task in dispatcher.agregado_localidades(
-                data_dir, pesquisa_id, agregado_metadados
-            ):
-                if task["dest_filepath"].exists():
+            tasks = dispatcher.agregado_localidades(args.data_dir, agregado_metadados)
+            for task in tasks:
+                if task["dest_filepath"].exists() and not args.overwrite:
                     continue
                 print(f"Task localidades: {pesquisa_id}/{agregado_id:05}")
                 q.put(task)

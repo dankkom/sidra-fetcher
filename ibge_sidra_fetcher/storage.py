@@ -98,19 +98,16 @@ def read_metadados(data_dir: Path, pesquisa_id: str, agregado_id: int) -> Agrega
     files = {
         "metadados": agregado_metadados_filepath(
             data_dir=data_dir,
-            pesquisa_id=pesquisa_id,
             agregado_id=agregado_id,
         ),
         "localidades": list(
-            agregado_metadata_dir(
+            agregado_dir(
                 data_dir=data_dir,
-                pesquisa_id=pesquisa_id,
                 agregado_id=agregado_id,
             ).glob("localidades-*.json")
         ),
         "periodos": agregado_periodos_filepath(
             data_dir=data_dir,
-            pesquisa_id=pesquisa_id,
             agregado_id=agregado_id,
         ),
     }
@@ -180,40 +177,26 @@ def read_metadados(data_dir: Path, pesquisa_id: str, agregado_id: int) -> Agrega
 
 # LOCUS -----------------------------------------------------------------------
 
-# DATA_DIR/<pesquisa_id>/agregado-<agregado_id>/metadados.json
-# DATA_DIR/<pesquisa_id>/agregado-<agregado_id>/periodos.json
-# DATA_DIR/<pesquisa_id>/agregado-<agregado_id>/localidades-<localidades_nivel_id*>.json
+# DATA_DIR/<pesquisa_id>/<agregado_id>/metadados.json
+# DATA_DIR/<pesquisa_id>/<agregado_id>/periodos.json
+# DATA_DIR/<pesquisa_id>/<agregado_id>/localidades-<localidades_nivel_id*>.json
 
 
-def sidra_agregados_filepath(data_dir: Path) -> Path:
-    return data_dir / "sidra-agregados.json"
+def agregados_filepath(data_dir: Path) -> Path:
+    return data_dir / "agregados.json"
 
 
-def pesquisa_dir(data_dir: Path, pesquisa_id: str) -> Path:
-    return data_dir / pesquisa_id.lower()
-
-
-def agregado_dir(data_dir: Path, pesquisa_id: str, agregado_id: int) -> Path:
-    return pesquisa_dir(data_dir, pesquisa_id) / f"agregado-{agregado_id:0>5}"
-
-
-def agregado_metadata_dir(
-    data_dir: Path,
-    pesquisa_id: str,
-    agregado_id: int,
-) -> Path:
-    return agregado_dir(data_dir, pesquisa_id, agregado_id) / "metadata"
+def agregado_dir(data_dir: Path, agregado_id: int) -> Path:
+    return data_dir / f"{agregado_id:0>6}"
 
 
 def agregado_metadados_filepath(
     data_dir: Path,
-    pesquisa_id: str,
     agregado_id: int,
 ) -> Path:
     return (
-        agregado_metadata_dir(
+        agregado_dir(
             data_dir,
-            pesquisa_id,
             agregado_id,
         )
         / "metadados.json"
@@ -222,13 +205,11 @@ def agregado_metadados_filepath(
 
 def agregado_periodos_filepath(
     data_dir: Path,
-    pesquisa_id: str,
     agregado_id: int,
 ) -> Path:
     return (
-        agregado_metadata_dir(
+        agregado_dir(
             data_dir,
-            pesquisa_id,
             agregado_id,
         )
         / "periodos.json"
@@ -237,16 +218,16 @@ def agregado_periodos_filepath(
 
 def agregado_localidades_filepath(
     data_dir: Path,
-    pesquisa_id: str,
     agregado_id: int,
     localidades_nivel: str,
 ) -> Path:
-    metadata_dir = agregado_metadata_dir(
-        data_dir,
-        pesquisa_id,
-        agregado_id,
+    return (
+        agregado_dir(
+            data_dir,
+            agregado_id,
+        )
+        / f"localidades-{localidades_nivel.lower()}.json"
     )
-    return metadata_dir / f"localidades-{localidades_nivel.lower()}.json"
 
 
 def get_filename(
@@ -271,14 +252,13 @@ def get_filename(
 
 def data_filepath(
     data_dir: Path,
-    pesquisa_id: str,
     agregado_id: int,
     periodo_id: int,
     modificacao: dt.date,
     localidade_id: int = None,
     variavel_id: int = None,
 ) -> Path:
-    d = agregado_dir(data_dir, pesquisa_id, agregado_id)
+    d = agregado_dir(data_dir, agregado_id)
     partition = [f"{periodo_id}"]
     if localidade_id:
         partition.append(f"{localidade_id}")
@@ -291,14 +271,14 @@ def data_filepath(
 
 # RAW -------------------------------------------------------------------------
 def read_json(filepath: Path):
-    logger.debug(f"Reading JSON file {filepath}")
+    logger.info(f"Reading JSON file {filepath}")
     with filepath.open("r", encoding="utf-8") as f:
         data = json.load(f)
     return data
 
 
 def write_json(data: dict | list | bytes, filepath: Path):
-    logger.debug(f"Writing JSON file {filepath}")
+    logger.info(f"Writing JSON file {filepath}")
     if isinstance(data, bytes):
         data = json.loads(data.decode("utf-8"))
     filepath.parent.mkdir(exist_ok=True, parents=True)
@@ -307,7 +287,7 @@ def write_json(data: dict | list | bytes, filepath: Path):
 
 
 def write_data(data: bytes, filepath: Path):
-    logger.debug(f"Writing bytes file {filepath}")
+    logger.info(f"Writing bytes file {filepath}")
     filepath.parent.mkdir(exist_ok=True, parents=True)
     with filepath.open("wb") as f:
         f.write(data)

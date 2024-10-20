@@ -13,27 +13,35 @@ def get_args() -> argparse.Namespace:
         required=True,
         help="Directory to store the fetched data",
     )
+    parser.add_argument(
+        "--overwrite",
+        action="store_true",
+    )
+    parser.add_argument(
+        "--threads",
+        type=int,
+        default=4,
+    )
     return parser.parse_args()
 
 
 def main():
     args = get_args()
-    data_dir = args.data_dir
 
-    sidra_agregados_filepath = storage.sidra_agregados_filepath(data_dir=data_dir)
-    sidra_agregados_data = storage.read_json(sidra_agregados_filepath)
+    agregados_filepath = storage.agregados_filepath(data_dir=args.data_dir)
+    agregados_data = storage.read_json(agregados_filepath)
 
     q = queue.Queue()
-    for _ in range(4):
+    for _ in range(args.threads):
         fetcher_worker = fetcher.Fetcher(q)
         fetcher_worker.start()
 
-    for pesquisa in sidra_agregados_data:
+    for pesquisa in agregados_data:
         pesquisa_id = pesquisa["id"]
         for agregado in pesquisa["agregados"]:
             agregado_id = int(agregado["id"])
-            task = dispatcher.periodos(data_dir, pesquisa_id, agregado_id)
-            if task["dest_filepath"].exists():
+            task = dispatcher.periodos(args.data_dir, agregado_id)
+            if task["dest_filepath"].exists() and not args.overwrite:
                 continue
             print("Task periodos:", pesquisa_id, agregado_id)
             q.put(task)

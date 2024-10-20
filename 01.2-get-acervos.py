@@ -15,17 +15,20 @@ def get_args() -> argparse.Namespace:
         required=True,
         help="Directory to store the fetched data",
     )
+    parser.add_argument(
+        "--overwrite",
+        action="store_true",
+    )
     return parser.parse_args()
 
 
 def main():
     args = get_args()
-    data_dir = args.data_dir
 
-    with httpx.Client() as  client:
+    with httpx.Client() as client:
         for a in Acervo:
-            task = dispatcher.acervo(data_dir, a)
-            if task["dest_filepath"].exists():
+            task = dispatcher.acervo(args.data_dir, a)
+            if task["dest_filepath"].exists() and not args.overwrite:
                 continue
             print("Task acervo:", a)
             data = fetcher.get(task["url"], client)
