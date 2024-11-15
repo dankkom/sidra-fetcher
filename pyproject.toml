@@ -9,6 +9,10 @@ python = ">=3.10"
 httpx = "*"
 tenacity = "*"
 
+[tool.ruff]
+line-length = 79
+lint.extend-select = ["I"]
+
 [build-system]
 requires = ["poetry-core"]
 build-backend = "poetry.core.masonry.api"
