@@ -68,7 +68,10 @@ from .api.agregados import (
 def read_periodos(filepath: Path) -> list[Periodo]:
     logger.debug(f"Reading Periodos file {filepath}")
     periodos = []
-    parse_modificacao = lambda x: dt.datetime.strptime(x, "%d/%m/%Y").date()
+
+    def parse_modificacao(x):
+        return dt.datetime.strptime(x, "%d/%m/%Y").date()
+
     for per in read_json(filepath):
         p = Periodo(
             id=per["id"],
@@ -82,13 +85,13 @@ def read_periodos(filepath: Path) -> list[Periodo]:
 def read_localidades(filepath: Path) -> list[Localidade]:
     logger.debug(f"Reading Localidades file {filepath}")
     localidades = []
-    for loc in read_json(filepath):
-        l = Localidade(
-            id=loc["id"],
-            nome=loc["nome"],
-            nivel=NivelTerritorial(**loc["nivel"]),
+    for item in read_json(filepath):
+        localidade = Localidade(
+            id=item["id"],
+            nome=item["nome"],
+            nivel=NivelTerritorial(**item["nivel"]),
         )
-        localidades.append(l)
+        localidades.append(localidade)
     return localidades
 
 
