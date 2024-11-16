@@ -1,21 +1,10 @@
 import configparser
 import logging
-import os
 from logging import handlers
 from pathlib import Path
 
-CONFIG_DIR = Path()
-if not CONFIG_DIR:
-    raise FileNotFoundError("No configuration directory found in environment variables")
-CONFIG_DIR = Path(CONFIG_DIR)
-DATA_DIR = os.getenv("DATA_DIR")
-if not DATA_DIR:
-    raise FileNotFoundError("No data directory found in environment variables")
-DATA_DIR = Path(DATA_DIR) / "raw" / "ibge-sidra"
-DATA_DIR.mkdir(exist_ok=True, parents=True)
-
 _config = configparser.ConfigParser()
-_config.read(CONFIG_DIR / "config.ini")
+_config.read(Path("config.ini"))
 
 USER_AGENT = _config["DEFAULT"]["USER_AGENT"]
 HTTP_HEADERS = {
