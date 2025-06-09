@@ -74,7 +74,7 @@ class Categoria:
 @dataclass
 class ClassificacaoSumarizacao:
     status: bool
-    excecao: list
+    excecao: list[int]
 
 
 @dataclass
