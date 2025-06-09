@@ -84,6 +84,7 @@ class Fetcher:
 
     @retry(stop=stop_after_attempt(3))
     def get_agregado_metadados(self, agregado_id: int) -> Agregado:
+        """Fetch the metadata for a specific agregado by its ID."""
         url_metadados = build_url_metadados(agregado_id)
         logger.info(f"Downloading agregado metadados {url_metadados}")
         data = self.get(url_metadados)
@@ -196,6 +197,7 @@ class Fetcher:
         return agregado_metadados
 
     def get_acervo(self, acervo: AcervoEnum) -> Any:
+        """Fetch data from a specific acervo."""
         url_acervo = build_url_acervos(acervo)
         logger.info(f"Downloading acervo {url_acervo}")
         data = self.get(url_acervo)
