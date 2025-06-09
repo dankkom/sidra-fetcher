@@ -139,7 +139,7 @@ def build_url_metadados(agregado_id: int) -> str:
     return BASE_URL + f"/{agregado_id}/metadados"
 
 
-def build_url_periodoso(agregado_id: int) -> str:
+def build_url_periodos(agregado_id: int) -> str:
     """Obtém os períodos associados ao agregado."""
     return BASE_URL + f"/{agregado_id}/periodos"
 
@@ -149,8 +149,8 @@ def build_url_localidades(agregado_id: int, localidades_nivel: str) -> str:
     return BASE_URL + f"/{agregado_id}/localidades/{localidades_nivel}"
 
 
-def build_url_acervos(acervo_id: str) -> str:
-    params = {"acervo": acervo_id}
+def build_url_acervos(acervo: AcervoEnum) -> str:
+    params = {"acervo": acervo.value}
     url_parts = list(urlparse.urlparse(BASE_URL))
     query = dict(urlparse.parse_qsl(url_parts[4]))
     query.update(params)
