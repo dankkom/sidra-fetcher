@@ -1,3 +1,4 @@
-from . import config
+import logging
 
-logger = config.setup_logging("ibge_sidra_fetcher", "ibge.log")
+logger = logging.getLogger(__name__)
+logger.addHandler(logging.NullHandler())
