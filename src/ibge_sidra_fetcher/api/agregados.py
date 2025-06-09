@@ -120,6 +120,19 @@ class Agregado:
     localidades: list[Localidade]
 
 
+@dataclass
+class IndiceAgregado:
+    id: int
+    nome: str
+
+
+@dataclass
+class IndicePesquisaAgregados:
+    id: str
+    nome: str
+    agregados: list[IndiceAgregado]
+
+
 class AcervoEnum(StrEnum):
     ASSUNTO = "A"
     CLASSIFICACAO = "C"

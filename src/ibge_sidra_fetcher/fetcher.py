@@ -15,6 +15,8 @@ from ibge_sidra_fetcher.api.agregados import (
     Categoria,
     Classificacao,
     ClassificacaoSumarizacao,
+    IndiceAgregado,
+    IndicePesquisaAgregados,
     Localidade,
     NivelTerritorial,
     Periodicidade,
@@ -59,10 +61,25 @@ class Fetcher:
         return data
 
     @retry(stop=stop_after_attempt(3))
-    def get_agregados(self) -> Any:
+    def get_indice_pesquisas_agregados(self) -> list[IndicePesquisaAgregados]:
+        """Fetch the list of agregados metadata."""
         url_agregados = build_url_agregados()
         logger.info(f"Downloading list of agregados metadata {url_agregados}")
         data = self.get(url_agregados)
+        data = [
+            IndicePesquisaAgregados(
+                id=item["id"],
+                nome=item["nome"],
+                agregados=[
+                    IndiceAgregado(
+                        id=agregado["id"],
+                        nome=agregado["nome"],
+                    )
+                    for agregado in item["agregados"]
+                ],
+            )
+            for item in data
+        ]
         return data
 
     @retry(stop=stop_after_attempt(3))
