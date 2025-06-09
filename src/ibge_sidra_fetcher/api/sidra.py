@@ -5,7 +5,7 @@ Fonte: https://apisidra.ibge.gov.br | https://apisidra.ibge.gov.br/home/ajuda
 """
 
 import re
-from typing import Any, Optional
+from typing import Any
 
 BASE_URL = "https://apisidra.ibge.gov.br/values"
 
@@ -48,7 +48,7 @@ class Parametro:
         variables: list[str],
         periods: list[str],
         classifications: dict[str, list[str]],
-        decimals: Optional[str] = "/d/m",  # Padrão é precisão máxima
+        decimals: str = "/d/m",  # Padrão é precisão máxima
     ) -> None:
         self.agregado = aggregate
         self.territorios = territories
@@ -132,7 +132,11 @@ def get_sidra_url_request_period(
     return url
 
 
-def parse_territories(url: str) -> dict[str, list[str]]:
+def parse_territories(url: str) -> tuple[list[str], dict[str, list[str]]]:
+    """Parse the territories from the URL.
+    Returns a tuple with the territories and a dictionary with the
+    territories and their respective selected values.
+    """
     n = re.findall(r"(\/n\d\/)(all|\d+(,\d+)*)", url)
     n = ["".join(g) for g in n]
     territories = {
@@ -142,36 +146,43 @@ def parse_territories(url: str) -> dict[str, list[str]]:
     return n, territories
 
 
-def parse_periods(url):
+def parse_periods(url: str) -> tuple[str, list[str]]:
     p = re.search(r"/p/(all|(first|last(%20\d+|))|\d{6}(,\d{6})*)", url)
+    if not p:
+        return "", []
     p = p.group()
     periods = p.strip("/p").split(",")
     return p, periods
 
 
-def parse_decimal(url):
+def parse_decimal(url: str) -> tuple[str, dict[str, str]]:
     d = re.search(r"\/d\/(v\d+%20\d+)(,v\d+%20\d+)*", url)
+    if not d:
+        return "", {}
     decimal = {}
-    if d:
-        d = d.group()
-        decimal = {
-            i.split("%20")[0].strip("v"): i.split("%20")[1]
-            for i in d.strip("/d").split(",")
-        }
-
+    d = d.group()
+    decimal = {
+        i.split("%20")[0].strip("v"): i.split("%20")[1]
+        for i in d.strip("/d").split(",")
+    }
     return d, decimal
 
 
-def parse_variables(url):
+def parse_variables(url: str) -> tuple[str, list[str]]:
     v = re.search(r"(\/v\/)(all|allxp|\d+(,\d+)*)", url)
+    if not v:
+        return "", []
     variables = []
-    if v:
-        v = v.group()
-        variables = v.strip("/v").split(",")
+    v = v.group()
+    variables = v.strip("/v").split(",")
     return v, variables
 
 
-def parse_classifications(url):
+def parse_classifications(url: str) -> tuple[list[str], dict[str, list[str]]]:
+    """Parse the classifications from the URL.
+    Returns a tuple with the classifications and a dictionary with the
+    classifications and their respective selected values.
+    """
     c = re.findall(r"(\/c\d+\/)(all|allxt|\d+(,\d+)*)", url)
     c = ["".join(g) for g in c]
     classifications = {
@@ -181,14 +192,19 @@ def parse_classifications(url):
     return c, classifications
 
 
-def parse_aggregate(url):
+def parse_aggregate(url: str) -> tuple[str, str]:
+    """Parse the aggregate from the URL.
+    Returns a tuple with the aggregate and the aggregate ID.
+    """
     t = re.search(r"/t/\d+", url)
+    if not t:
+        return "", ""
     t = t.group()
     aggregate = t.strip("/t")
     return t, aggregate
 
 
-def parse_url(url: str) -> dict[str, str]:
+def parse_url(url: str) -> dict[str, Any]:
     """Given a URL, returns a dictionary with the parameters of the URL
     {
         "url": url,
