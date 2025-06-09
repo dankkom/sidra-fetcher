@@ -1,20 +1,49 @@
+import datetime as dt
+import json
 import time
+from typing import Any
 
 import httpx
 from tenacity import retry
 from tenacity.stop import stop_after_attempt
 from tenacity.wait import wait_exponential
 
-import ibge_sidra_fetcher.api.agregados
+from ibge_sidra_fetcher.api.agregados import (
+    AcervoEnum,
+    Agregado,
+    AgregadoNivelTerritorial,
+    Categoria,
+    Classificacao,
+    ClassificacaoSumarizacao,
+    Localidade,
+    NivelTerritorial,
+    Periodicidade,
+    Periodo,
+    Pesquisa,
+    Variavel,
+    build_url_acervos,
+    build_url_agregados,
+    build_url_localidades,
+    build_url_metadados,
+    build_url_periodos,
+)
 
 from . import logger
 
 
 class Fetcher:
-    def __init__(self, client: httpx.Client) -> None:
-        self.client = client
+    def __init__(self) -> None:
+        self.client = httpx.Client()
 
-    def get(self, url: str) -> bytes:
+    def get(self, url: str) -> Any:
+        """Fetch data from the given URL.
+        Args:
+            url (str): The URL to fetch data from.
+        Returns:
+            Any: The data fetched from the URL, parsed as JSON.
+        Raises:
+            ConnectionError: If the data returned is None or if the request fails.
+        """
         logger.info(f"Downloading DATA {url}")
         t0 = time.time()
         data = b""
@@ -26,52 +55,131 @@ class Fetcher:
             raise ConnectionError("Data returned is None!")
         t1 = time.time()
         logger.debug(f"Download of {url} took {t1 - t0:.2f} seconds")
+        data = json.loads(data.decode("utf-8"))
         return data
 
     @retry(stop=stop_after_attempt(3))
-    def get_agregados(self) -> bytes:
-        url_agregados = ibge_sidra_fetcher.api.agregados.build_url_agregados()
+    def get_agregados(self) -> Any:
+        url_agregados = build_url_agregados()
         logger.info(f"Downloading list of agregados metadata {url_agregados}")
         data = self.get(url_agregados)
         return data
 
     @retry(stop=stop_after_attempt(3))
-    def get_agregado_metadados(self, agregado_id: int) -> bytes:
-        url_metadados = ibge_sidra_fetcher.api.agregados.build_url_metadados(
-            agregado_id
-        )
+    def get_agregado_metadados(self, agregado_id: int) -> Agregado:
+        url_metadados = build_url_metadados(agregado_id)
         logger.info(f"Downloading agregado metadados {url_metadados}")
         data = self.get(url_metadados)
-        return data
+        nivel_territorial = AgregadoNivelTerritorial(
+            administrativo=data["nivelTerritorial"]["Administrativo"],
+            especial=data["nivelTerritorial"]["Especial"],
+            ibge=data["nivelTerritorial"]["IBGE"],
+        )
+        variaveis = [
+            Variavel(
+                id=v["id"],
+                nome=v["nome"],
+                unidade=v["unidade"],
+                sumarizacao=v["sumarizacao"],
+            )
+            for v in data["variaveis"]
+        ]
+        classificacoes = [
+            Classificacao(
+                id=cla["id"],
+                nome=cla["nome"],
+                sumarizacao=ClassificacaoSumarizacao(
+                    status=cla["sumarizacao"]["status"],
+                    excecao=cla["sumarizacao"]["excecao"],
+                ),
+                categorias=[
+                    Categoria(
+                        id=cat["id"],
+                        nome=cat["nome"],
+                        unidade=cat["unidade"],
+                        nivel=cat["nivel"],
+                    )
+                    for cat in cla["categorias"]
+                ],
+            )
+            for cla in data["classificacoes"]
+        ]
+        agregado = Agregado(
+            id=data["id"],
+            nome=data["nome"],
+            url=data["URL"],
+            pesquisa=Pesquisa(id="", nome=data["pesquisa"]),
+            assunto=data["assunto"],
+            periodicidade=Periodicidade(**data["periodicidade"]),
+            nivel_territorial=nivel_territorial,
+            variaveis=variaveis,
+            classificacoes=classificacoes,
+            periodos=[],
+            localidades=[],
+        )
+        return agregado
 
     @retry(
         stop=stop_after_attempt(3),
         wait=wait_exponential(multiplier=1, min=3, max=30),
     )
-    def get_agregado_periodos(self, agregado_id: int) -> bytes:
-        url_periodos = ibge_sidra_fetcher.api.agregados.build_url_periodoso(
-            agregado_id
-        )
+    def get_agregado_periodos(self, agregado_id: int) -> list[Periodo]:
+        """Fetch the periods associated with a specific agregado by its ID."""
+        url_periodos = build_url_periodos(agregado_id)
         logger.info(f"Downloading agregado periodos {url_periodos}")
         data = self.get(url_periodos)
+        data = [
+            Periodo(
+                id=periodo["id"],
+                literals=periodo["literals"],
+                modificacao=dt.datetime.strptime(
+                    periodo["modificacao"], "%d/%m/%Y"
+                ).date(),
+            )
+            for periodo in data
+        ]
         return data
 
     def get_agregado_localidades(
         self, agregado_id: int, localidades_nivel: str
-    ) -> bytes:
-        url_localidades = (
-            ibge_sidra_fetcher.api.agregados.build_url_localidades(
-                agregado_id, localidades_nivel
-            )
-        )
+    ) -> list[Localidade]:
+        """Fetch the localidades associated with a specific agregado by its ID and level."""
+        url_localidades = build_url_localidades(agregado_id, localidades_nivel)
         logger.info(f"Downloading agregado localidades {url_localidades}")
         data = self.get(url_localidades)
-        return data
+        return [
+            Localidade(
+                id=localidade["id"],
+                nome=localidade["nome"],
+                nivel=NivelTerritorial(
+                    id=localidade["nivel"]["id"],
+                    nome=localidade["nivel"]["nome"],
+                ),
+            )
+            for localidade in data
+        ]
 
-    def get_acervo(self, acervo_id: str) -> bytes:
-        url_acervo = ibge_sidra_fetcher.api.agregados.build_url_acervos(
-            acervo_id
-        )
+    def get_agregado(self, agregado_id: int) -> Agregado:
+        """Fetch the complete data for a specific agregado by its ID."""
+        logger.info(f"Downloading agregado {agregado_id}")
+        agregado_metadados = self.get_agregado_metadados(agregado_id)
+        agregado_periodos = self.get_agregado_periodos(agregado_id)
+        agregado_localidades: list[Localidade] = []
+        for nivel in agregado_metadados.nivel_territorial.administrativo:
+            localidades = self.get_agregado_localidades(agregado_id, nivel)
+            agregado_localidades.extend(localidades)
+        for nivel in agregado_metadados.nivel_territorial.especial:
+            localidades = self.get_agregado_localidades(agregado_id, nivel)
+            agregado_localidades.extend(localidades)
+        for nivel in agregado_metadados.nivel_territorial.ibge:
+            localidades = self.get_agregado_localidades(agregado_id, nivel)
+            agregado_localidades.extend(localidades)
+        agregado_metadados.periodos = agregado_periodos
+        agregado_metadados.localidades = agregado_localidades
+        return agregado_metadados
+
+    def get_acervo(self, acervo: AcervoEnum) -> Any:
+        url_acervo = build_url_acervos(acervo)
         logger.info(f"Downloading acervo {url_acervo}")
         data = self.get(url_acervo)
         return data
