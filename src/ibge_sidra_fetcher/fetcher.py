@@ -33,7 +33,7 @@ from ibge_sidra_fetcher.api.agregados import (
 from . import logger
 
 
-class Fetcher:
+class SidraClient:
     def __init__(self) -> None:
         self.client = httpx.Client()
 
@@ -203,7 +203,7 @@ class Fetcher:
         data = self.get(url_acervo)
         return data
 
-    def __enter__(self) -> "Fetcher":
+    def __enter__(self) -> "SidraClient":
         return self
 
     def __exit__(self, exc_type, exc_value, traceback) -> None:
