@@ -8,7 +8,7 @@ from tenacity import retry
 from tenacity.stop import stop_after_attempt
 from tenacity.wait import wait_exponential
 
-from ibge_sidra_fetcher.api.agregados import (
+from sidra_fetcher.api.agregados import (
     AcervoEnum,
     Agregado,
     AgregadoNivelTerritorial,
