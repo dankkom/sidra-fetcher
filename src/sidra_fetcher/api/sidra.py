@@ -43,28 +43,28 @@ class Parametro:
 
     def __init__(
         self,
-        aggregate: str,
-        territories: dict[str, list[str]],
-        variables: list[str],
-        periods: list[str],
-        classifications: dict[str, list[str]],
-        decimals: str = "/d/m",  # Padrão é precisão máxima
+        agregado: str,
+        territorios: dict[str, list[str]],
+        variaveis: list[str],
+        periodos: list[str],
+        classificacoes: dict[str, list[str]],
+        decimais: str = "/d/m",  # Padrão é precisão máxima
     ) -> None:
-        self.agregado = aggregate
-        self.territorios = territories
-        self.variaveis = variables
-        self.periodos = periods
-        self.classificacoes = classifications
-        self.decimais = decimals
+        self.agregado = agregado
+        self.territorios = territorios
+        self.variaveis = variaveis
+        self.periodos = periodos
+        self.classificacoes = classificacoes
+        self.decimais = decimais
 
     def assign(self, name: str, value: Any) -> "Parametro":
         p = Parametro(
-            aggregate=self.agregado,
-            territories=self.territorios,
-            variables=self.variaveis,
-            periods=self.periodos,
-            classifications=self.classificacoes,
-            decimals=self.decimais,
+            agregado=self.agregado,
+            territorios=self.territorios,
+            variaveis=self.variaveis,
+            periodos=self.periodos,
+            classificacoes=self.classificacoes,
+            decimais=self.decimais,
         )
         setattr(p, name, value)
         return p
@@ -257,11 +257,11 @@ def parameter_from_url(url: str) -> Parametro:
     _, decimal = parse_decimal(url)
     _, periods = parse_periods(url)
     parameter = Parametro(
-        aggregate=aggregate,
-        territories=territories,
-        variables=variables,
-        periods=periods,
-        classifications=classifications,
-        decimals=decimal,
+        agregado=aggregate,
+        territorios=territories,
+        variaveis=variables,
+        periodos=periods,
+        classificacoes=classifications,
+        decimais=decimal,
     )
     return parameter
