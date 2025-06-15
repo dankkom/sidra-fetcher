@@ -34,8 +34,8 @@ from . import logger
 
 
 class SidraClient:
-    def __init__(self) -> None:
-        self.client = httpx.Client()
+    def __init__(self, timeout: int = 60) -> None:
+        self.client = httpx.Client(timeout=timeout, follow_redirects=True)
 
     def get(self, url: str) -> Any:
         """Fetch data from the given URL.
