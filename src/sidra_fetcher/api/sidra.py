@@ -5,9 +5,19 @@ Fonte: https://apisidra.ibge.gov.br | https://apisidra.ibge.gov.br/home/ajuda
 """
 
 import re
+from enum import Enum
 from typing import Any
 
 BASE_URL = "https://apisidra.ibge.gov.br/values"
+
+
+class Formato(Enum):
+    """Enum para os formatos de saída do SIDRA."""
+
+    A = "a"  # Códigos e nomes dos descritores
+    C = "c"  # Códigos dos descritores
+    N = "n"  # Nomes dos descritores
+    U = "u"  # Códigos e nomes dos descritores, com unidades de medida
 
 
 class Parametro:
@@ -40,6 +50,10 @@ class Parametro:
     # Cabeçalho (header)
     cabecalho: bool = True
 
+    # Formato'
+    # Padrão é "a" (códigos e nomes dos descritores)
+    formato: Formato = Formato.A
+
     # Precisão
     decimais: str
     # /d/m
@@ -52,6 +66,7 @@ class Parametro:
         periodos: list[str],
         classificacoes: dict[str, list[str]],
         cabecalho: bool = True,
+        formato: Formato = Formato.A,  # Padrão é "a" (códigos e nomes dos descritores)
         decimais: str = "/d/m",  # Padrão é precisão máxima
     ) -> None:
         self.agregado = agregado
@@ -60,6 +75,7 @@ class Parametro:
         self.periodos = periodos
         self.classificacoes = classificacoes
         self.cabecalho = cabecalho
+        self.formato = formato
         self.decimais = decimais
 
     def assign(self, name: str, value: Any) -> "Parametro":
@@ -70,6 +86,7 @@ class Parametro:
             periodos=self.periodos,
             classificacoes=self.classificacoes,
             cabecalho=self.cabecalho,
+            formato=self.formato,
             decimais=self.decimais,
         )
         setattr(p, name, value)
@@ -106,9 +123,12 @@ class Parametro:
             h = "/h/y"
         else:
             h = "/h/n"
+
+        f = f"/f/{self.formato.value}"  # Formato
+
         d = "/d/m"  # Precisão máxima
 
-        return BASE_URL + t + n + v + p + c + d
+        return BASE_URL + t + n + v + p + c + h + f + d
 
     def __repr__(self) -> str:
         return self.url()
@@ -125,6 +145,7 @@ class Parametro:
         periodos = self.periodos == o.periodos
         classificacoes = self.classificacoes == o.classificacoes
         cabecalho = self.cabecalho == o.cabecalho
+        formato = self.formato == o.formato
         decimais = self.decimais == o.decimais
         return (
             agregado
@@ -133,6 +154,7 @@ class Parametro:
             and periodos
             and classificacoes
             and cabecalho
+            and formato
             and decimais
         )
 
@@ -178,6 +200,17 @@ def parse_header(url: str) -> tuple[str, bool]:
         return "", True
     h = h.group()
     return h, h.strip("/h") == "y"
+
+
+def parse_format(url: str) -> tuple[str, Formato]:
+    """Parse the format from the URL.
+    Returns a string with the format.
+    """
+    f = re.search(r"/f/(a|c|n|u)", url)
+    if not f:
+        return "", Formato.A
+    f = f.group()
+    return f, Formato(f.strip("/f"))
 
 
 def parse_decimal(url: str) -> tuple[str, dict[str, str]]:
@@ -255,6 +288,7 @@ def parse_url(url: str) -> dict[str, Any]:
     c, classifications = parse_classifications(url)
     v, variables = parse_variables(url)
     h, header = parse_header(url)
+    f, format_ = parse_format(url)
     d, decimal = parse_decimal(url)
     p, periods = parse_periods(url)
 
@@ -270,6 +304,8 @@ def parse_url(url: str) -> dict[str, Any]:
         "variables": variables,
         "h": h,
         "header": header,
+        "f": f,
+        "format": format_,
         "d": d,
         "decimal": decimal,
         "p": p,
@@ -284,6 +320,7 @@ def parameter_from_url(url: str) -> Parametro:
     _, classifications = parse_classifications(url)
     _, variables = parse_variables(url)
     _, header = parse_header(url)
+    _, format_ = parse_format(url)
     d, _ = parse_decimal(url)
     _, periods = parse_periods(url)
     parameter = Parametro(
@@ -293,6 +330,7 @@ def parameter_from_url(url: str) -> Parametro:
         periodos=periods,
         classificacoes=classifications,
         cabecalho=header,
+        formato=format_,
         decimais=d,
     )
     return parameter
