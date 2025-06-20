@@ -106,7 +106,9 @@ class Parametro:
     def __str__(self) -> str:
         return self.url()
 
-    def __eq__(self, o: "Parametro") -> bool:
+    def __eq__(self, o: object) -> bool:
+        if not isinstance(o, Parametro):
+            return NotImplemented
         agregado = self.agregado == o.agregado
         territorios = self.territorios == o.territorios
         variaveis = self.variaveis == o.variaveis
@@ -186,7 +188,8 @@ def parse_classifications(url: str) -> tuple[list[str], dict[str, list[str]]]:
     c = re.findall(r"(\/c\d+\/)(all|allxt|\d+(,\d+)*)", url)
     c = ["".join(g) for g in c]
     classifications = {
-        cat.strip("c"): [select] for _, cat, select in [i.split("/") for i in c]
+        cat.strip("c"): [select]
+        for _, cat, select in [i.split("/") for i in c]
     }
 
     return c, classifications
@@ -254,7 +257,7 @@ def parameter_from_url(url: str) -> Parametro:
     _, territories = parse_territories(url)
     _, classifications = parse_classifications(url)
     _, variables = parse_variables(url)
-    _, decimal = parse_decimal(url)
+    d, _ = parse_decimal(url)
     _, periods = parse_periods(url)
     parameter = Parametro(
         agregado=aggregate,
@@ -262,6 +265,6 @@ def parameter_from_url(url: str) -> Parametro:
         variaveis=variables,
         periodos=periods,
         classificacoes=classifications,
-        decimais=decimal,
+        decimais=d,
     )
     return parameter
