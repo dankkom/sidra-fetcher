@@ -20,6 +20,23 @@ class Formato(Enum):
     U = "u"  # Códigos e nomes dos descritores, com unidades de medida
 
 
+class Precisao(Enum):
+    """Enum para os formatos de precisão do SIDRA."""
+
+    S = "s"  # Precisão padrão
+    M = "m"  # Precisão máxima
+    D0 = "0"  # Sem casas decimais
+    D1 = "1"  # Uma casa decimal
+    D2 = "2"  # Duas casas decimais
+    D3 = "3"  # Três casas decimais
+    D4 = "4"  # Quatro casas decimais
+    D5 = "5"  # Cinco casas decimais
+    D6 = "6"  # Seis casas decimais
+    D7 = "7"  # Sete casas decimais
+    D8 = "8"  # Oito casas decimais
+    D9 = "9"  # Nove casas decimais
+
+
 class Parametro:
     # Agregado
     agregado: str
@@ -55,8 +72,9 @@ class Parametro:
     formato: Formato = Formato.A
 
     # Precisão
-    decimais: str
-    # /d/m
+    # Padrão é precisão máxima
+    decimais: dict[str, Precisao]
+    # {"": Precisao.M} => /d/m
 
     def __init__(
         self,
@@ -67,7 +85,7 @@ class Parametro:
         classificacoes: dict[str, list[str]],
         cabecalho: bool = True,
         formato: Formato = Formato.A,  # Padrão é "a" (códigos e nomes dos descritores)
-        decimais: str = "/d/m",  # Padrão é precisão máxima
+        decimais: dict[str, Precisao] = {"": Precisao.M},
     ) -> None:
         self.agregado = agregado
         self.territorios = territorios
@@ -126,7 +144,18 @@ class Parametro:
 
         f = f"/f/{self.formato.value}"  # Formato
 
-        d = "/d/m"  # Precisão máxima
+        if len(self.decimais) >= 2:
+            d = "/d/" + ",".join(
+                [
+                    f"v{key}%20{value.value}"
+                    for key, value in self.decimais.items()
+                ]
+            )
+        elif len(self.decimais) == 1:
+            precisao = self.decimais.get("", Precisao.M)
+            d = f"/d/{precisao.value}"
+        else:
+            d = f"/d/{Precisao.M.value}"
 
         return BASE_URL + t + n + v + p + c + h + f + d
 
@@ -213,14 +242,20 @@ def parse_format(url: str) -> tuple[str, Formato]:
     return f, Formato(f.strip("/f"))
 
 
-def parse_decimal(url: str) -> tuple[str, dict[str, str]]:
-    d = re.search(r"\/d\/(v\d+%20\d+)(,v\d+%20\d+)*", url)
+def parse_decimal(url: str) -> tuple[str, dict[str, Precisao]]:
+    d = re.search(r"\/d\/(?:v\d+%20\d+(?:,v\d+%20\d+)*|[ms])", url)
     if not d:
         return "", {}
     decimal = {}
     d = d.group()
+    if d.strip("/d") == "m":
+        # If the precision is "m", it means maximum precision
+        return d, {"": Precisao.M}
+    elif d.strip("/d") == "s":
+        # If the precision is "s", it means standard precision
+        return d, {"": Precisao.S}
     decimal = {
-        i.split("%20")[0].strip("v"): i.split("%20")[1]
+        i.split("%20")[0].strip("v"): Precisao(i.split("%20")[1])
         for i in d.strip("/d").split(",")
     }
     return d, decimal
@@ -321,7 +356,7 @@ def parameter_from_url(url: str) -> Parametro:
     _, variables = parse_variables(url)
     _, header = parse_header(url)
     _, format_ = parse_format(url)
-    d, _ = parse_decimal(url)
+    _, decimais = parse_decimal(url)
     _, periods = parse_periods(url)
     parameter = Parametro(
         agregado=aggregate,
@@ -331,6 +366,6 @@ def parameter_from_url(url: str) -> Parametro:
         classificacoes=classifications,
         cabecalho=header,
         formato=format_,
-        decimais=d,
+        decimais=decimais,
     )
     return parameter
