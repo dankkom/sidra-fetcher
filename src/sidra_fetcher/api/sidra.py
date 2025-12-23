@@ -1,7 +1,13 @@
-"""API do SIDRA.
+"""Utilities for constructing and parsing SIDRA API URLs.
 
-Fonte: https://apisidra.ibge.gov.br | https://apisidra.ibge.gov.br/home/ajuda
+This module contains helpers to build SIDRA request URLs and parse
+components from existing SIDRA URLs. It also exposes small enums used
+to format requests and a ``Parametro`` helper class that models the
+query parameters supported by the SIDRA ``/values`` endpoint.
 
+References:
+- https://apisidra.ibge.gov.br
+- https://apisidra.ibge.gov.br/home/ajuda
 """
 
 import re
@@ -38,6 +44,23 @@ class Precisao(Enum):
 
 
 class Parametro:
+    """Model container for SIDRA `/values` request parameters.
+
+    The class stores the typical segments used by SIDRA requests
+    (aggregate, territories, variables, periods, classifications,
+    header flag, format and decimal precision) and can render a
+    complete request URL via :meth:`url`.
+
+    Attributes
+        agregado: Aggregate/table identifier used in the `/t/` segment.
+        territorios: Mapping of territorial levels to lists of ids.
+        variaveis: List of variable identifiers for the `/v/` segment.
+        periodos: List of period identifiers for the `/p/` segment.
+        classificacoes: Mapping of classification ids to selected values.
+        cabecalho: Whether to include the header (`/h/y`) in the request.
+        formato: Output format (see :class:`Formato`).
+        decimais: Dict mapping variable keys to :class:`Precisao` values.
+    """
     # Agregado
     agregado: str
     # 1 => /t/1
@@ -97,6 +120,18 @@ class Parametro:
         self.decimais = decimais
 
     def assign(self, name: str, value: Any) -> "Parametro":
+        """Return a shallow copy of this Parametro with one attribute replaced.
+
+        This helper is used to derive a new parameter set from an
+        existing one without mutating the original instance.
+
+        Args:
+            name: Attribute name to replace on the returned instance.
+            value: New value for the attribute.
+
+        Returns:
+            A new :class:`Parametro` with the requested attribute set.
+        """
         p = Parametro(
             agregado=self.agregado,
             territorios=self.territorios,
@@ -111,6 +146,12 @@ class Parametro:
         return p
 
     def url(self) -> str:
+        """Render the full SIDRA `/values` request URL for these parameters.
+
+        Returns the absolute URL including the base endpoint and all
+        configured segments (aggregate, territories, variables,
+        periods, classifications, header flag, format and decimals).
+        """
         t = f"/t/{self.agregado}"  # Agregado
 
         n = ""
@@ -192,15 +233,26 @@ def get_sidra_url_request_period(
     parameter: Parametro,
     period_id: int,
 ) -> str:
+    """Return a SIDRA request URL for a single period.
+
+    Given a :class:`Parametro` instance, return a URL where the
+    ``periods`` segment is replaced with the provided ``period_id``.
+    """
     p = parameter.assign("periods", [str(period_id)])
     url = p.url()
     return url
 
 
 def parse_territories(url: str) -> tuple[list[str], dict[str, list[str]]]:
-    """Parse the territories from the URL.
-    Returns a tuple with the territories and a dictionary with the
-    territories and their respective selected values.
+    """Parse the `/n` (territory) segments from a SIDRA URL.
+
+    Args:
+        url: A SIDRA request URL (or the path part) to parse.
+
+    Returns:
+        A tuple ``(matches, territories)`` where ``matches`` is a list
+        of raw matched strings and ``territories`` maps territorial
+        level ids to lists of selected ids (or ``['all']``).
     """
     n = re.findall(r"(\/n\d\/)(all|\d+(,\d+)*)", url)
     n = ["".join(g) for g in n]
@@ -212,6 +264,12 @@ def parse_territories(url: str) -> tuple[list[str], dict[str, list[str]]]:
 
 
 def parse_periods(url: str) -> tuple[str, list[str]]:
+    """Parse the `/p` (periods) segment from a SIDRA URL.
+
+    Returns a tuple ``(raw_match, periods)`` where ``raw_match`` is the
+    matched segment string (or empty string if not present) and
+    ``periods`` is a list of individual period identifiers.
+    """
     p = re.search(r"/p/(all|(first|last(%20\d+|))|\d{6}(,\d{6})*)", url)
     if not p:
         return "", []
@@ -221,8 +279,12 @@ def parse_periods(url: str) -> tuple[str, list[str]]:
 
 
 def parse_header(url: str) -> tuple[str, bool]:
-    """Parse the header from the URL.
-    Returns a string with the header.
+    """Parse the `/h` (header) flag from a SIDRA URL.
+
+    Returns a tuple ``(raw_match, show_header)`` where ``show_header``
+    is ``True`` when the URL contains ``/h/y`` and ``False`` for
+    ``/h/n``. If the segment is missing the returned ``raw_match`` is
+    an empty string and ``show_header`` defaults to ``True``.
     """
     h = re.search(r"/h/(y|n)", url)
     if not h:
@@ -232,8 +294,10 @@ def parse_header(url: str) -> tuple[str, bool]:
 
 
 def parse_format(url: str) -> tuple[str, Formato]:
-    """Parse the format from the URL.
-    Returns a string with the format.
+    """Parse the `/f` (format) segment and return the matching :class:`Formato`.
+
+    Returns a tuple ``(raw_match, formato_enum)``. If the segment is
+    missing this returns an empty string and ``Formato.A`` as default.
     """
     f = re.search(r"/f/(a|c|n|u)", url)
     if not f:
@@ -243,6 +307,12 @@ def parse_format(url: str) -> tuple[str, Formato]:
 
 
 def parse_decimal(url: str) -> tuple[str, dict[str, Precisao]]:
+    """Parse the `/d` (decimals/precision) segment.
+
+    Returns a tuple ``(raw_match, decimal_map)`` where ``decimal_map``
+    maps variable keys (or empty string for the global precision) to
+    :class:`Precisao` values.
+    """
     d = re.search(r"\/d\/(?:v\d+%20\d+(?:,v\d+%20\d+)*|[ms])", url)
     if not d:
         return "", {}
@@ -262,6 +332,11 @@ def parse_decimal(url: str) -> tuple[str, dict[str, Precisao]]:
 
 
 def parse_variables(url: str) -> tuple[str, list[str]]:
+    """Parse the `/v` (variables) segment and return the variable ids.
+
+    Returns a tuple ``(raw_match, variables)`` where ``variables`` is a
+    list of ids or the special values like ``['all']``.
+    """
     v = re.search(r"(\/v\/)(all|allxp|\d+(,\d+)*)", url)
     if not v:
         return "", []
@@ -272,9 +347,11 @@ def parse_variables(url: str) -> tuple[str, list[str]]:
 
 
 def parse_classifications(url: str) -> tuple[list[str], dict[str, list[str]]]:
-    """Parse the classifications from the URL.
-    Returns a tuple with the classifications and a dictionary with the
-    classifications and their respective selected values.
+    """Parse `/c` (classification) segments from a SIDRA URL.
+
+    Returns a tuple ``(matches, classifications)`` where
+    ``classifications`` maps classification ids to lists of selected
+    category ids (or ``['all']``).
     """
     c = re.findall(r"(\/c\d+\/)(all|allxt|\d+(,\d+)*)", url)
     c = ["".join(g) for g in c]
@@ -287,8 +364,10 @@ def parse_classifications(url: str) -> tuple[list[str], dict[str, list[str]]]:
 
 
 def parse_aggregate(url: str) -> tuple[str, str]:
-    """Parse the aggregate from the URL.
-    Returns a tuple with the aggregate and the aggregate ID.
+    """Parse the `/t` (aggregate/table) segment and return its id.
+
+    Returns ``(raw_match, aggregate_id)``. If absent both return values
+    are empty strings.
     """
     t = re.search(r"/t/\d+", url)
     if not t:
@@ -299,22 +378,11 @@ def parse_aggregate(url: str) -> tuple[str, str]:
 
 
 def parse_url(url: str) -> dict[str, Any]:
-    """Given a URL, returns a dictionary with the parameters of the URL
-    {
-        "url": url,
-        "t": t,
-        "aggregate": aggregate,
-        "n": n,
-        "territories": territories,
-        "c": c,
-        "classifications": classifications,
-        "v": v,
-        "variables": variables,
-        "d": d,
-        "decimal": decimal,
-        "p": p,
-        "periods": periods,
-    }
+    """Parse all known SIDRA URL segments and return a parameter map.
+
+    The returned dict contains the raw matched segments and parsed
+    structures for aggregate, territories, classifications, variables,
+    header, format, decimals and periods.
     """
     url = url.replace(BASE_URL, "")  # Remove the base of the url
 

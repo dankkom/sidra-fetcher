@@ -1,4 +1,16 @@
-"""Módulo com funções para calcular estatísticas sobre os metadados dos agregados."""
+"""Utilities to compute statistics and size estimates for agregados.
+
+This module provides small helper functions that operate on an
+`:class:`Agregado` object (from ``sidra_fetcher.api.agregados``) and
+return useful summaries used for planning downloads or analysing the
+data shape. Available functions include:
+
+- ``get_stat_localidades``: counts localidades per territorial level.
+- ``get_n_dimensoes``: computes the product of category counts across
+    classifications (i.e. total number of dimension combinations).
+- ``calculate_aggregate``: returns a dictionary with several metrics
+    and size estimates (period/locality/variable dimensions and totals).
+"""
 
 from functools import reduce
 from typing import Any
@@ -7,7 +19,14 @@ from .api.agregados import Agregado
 
 
 def get_stat_localidades(agregado: Agregado) -> dict[str, int]:
-    """Calcula a quantidade de localidades por nível territorial."""
+    """Count localities per territorial level for an aggregate.
+
+    Args:
+        agregado: An :class:`Agregado` object containing `localidades`.
+
+    Returns:
+        A mapping from territorial level id to the number of localidades.
+    """
     stat_localidades: dict[str, int] = {}
     for localidade in agregado.localidades:
         nivel_id = localidade.nivel.id
@@ -18,7 +37,15 @@ def get_stat_localidades(agregado: Agregado) -> dict[str, int]:
 
 
 def get_n_dimensoes(agregado: Agregado) -> int:
-    """Calcula o número de dimensões do agregado."""
+    """Compute the product of category counts across classifications.
+
+    Args:
+        agregado: Aggregate whose classifications are used.
+
+    Returns:
+        The total number of unique dimension combinations (product of
+        category counts). Returns 1 when there are no classifications.
+    """
     n_dimensoes = reduce(
         lambda x, y: x * y,
         [
@@ -31,7 +58,15 @@ def get_n_dimensoes(agregado: Agregado) -> int:
 
 
 def calculate_aggregate(agregado: Agregado) -> dict[str, Any]:
-    """Calcula estatísticas sobre o agregado."""
+    """Calculate size and basic statistics for an aggregate.
+
+    Args:
+        agregado: Aggregate metadata object.
+
+    Returns:
+        A dictionary with counts (localidades, variaveis, classificacoes),
+        dimension and period sizes and estimated total result size.
+    """
     stat_localidades = get_stat_localidades(agregado)
     n_localidades = sum(stat_localidades.values())
 

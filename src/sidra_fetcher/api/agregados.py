@@ -1,29 +1,12 @@
-"""API de dados agregados do IBGE
+"""Helpers and dataclasses for the IBGE "agregados" API.
 
-Fonte: https://servicodados.ibge.gov.br/api/docs/agregados?versao=3
+This module defines lightweight dataclasses that mirror the structure
+returned by the IBGE agregados metadata endpoints and provides small
+URL builder helpers to access the agregados API (index, metadata,
+periods, localidades and acervos).
 
-> Incremente sua aplicação com a API de dados agregados do IBGE, a API que
-> alimenta o SIDRA, Sistema IBGE de Recuperação Automática, ferramenta que
-> disponibiliza os dados das pesquisas e censos realizados pelo IBGE.
->
-> A fim de aprofundar o conhecimento desta API, recomendamos que você explore
-> as tabelas do SIDRA 1705 e 1712 - Cada tabela do SIDRA corresponde a um
-> agregado desta API -, que são usadas como exemplos na documentação desta API.
-> Se desejar, use o Query Builder para gerar consultas customizadas.
->
-> obs 1: para desenvolvedores de soluções OLAP, Online Analytical Processing,
-> os conceitos de variáveis, classificações e categorias são, respectivamente,
-> idênticos aos de medidas, dimensões e membros.
-> obs 2: a presente versão permite 3 modos de visualização das variáveis. Para
-> mais informações, consulte o parâmetro view
-
----
-
-In this module:
-
-- Dataclasses for the data returned by agregados API.
-- Functions to generate the URL for the IBGE's Agregados API.
-
+The dataclasses are intentionally minimal and used primarily as type
+containers for data downloaded by :class:`sidra_fetcher.fetcher.SidraClient`.
 """
 
 import datetime as dt
@@ -37,6 +20,14 @@ BASE_URL = "https://servicodados.ibge.gov.br/api/v3/agregados"
 
 @dataclass
 class Periodo:
+    """Represents a period available for an aggregate.
+
+    Attributes:
+        id: Period identifier as provided by the API.
+        literals: Human readable representations for the period.
+        modificacao: Date when the period was last modified.
+    """
+
     id: str
     literals: list[str]
     modificacao: dt.date
@@ -44,12 +35,27 @@ class Periodo:
 
 @dataclass
 class NivelTerritorial:
+    """Territorial level metadata (e.g. state, municipality).
+
+    Attributes:
+        id: Identifier for the territorial level.
+        nome: Display name for the level.
+    """
+
     id: str
     nome: str
 
 
 @dataclass
 class Localidade:
+    """Represents a locality returned by the agregados API.
+
+    Attributes:
+        id: Locality identifier.
+        nome: Locality name.
+        nivel: The territorial level for this locality.
+    """
+
     id: str
     nome: str
     nivel: NivelTerritorial
@@ -57,6 +63,15 @@ class Localidade:
 
 @dataclass
 class Variavel:
+    """Metadata for a variable available in an aggregate.
+
+    Attributes:
+        id: Variable identifier.
+        nome: Variable name.
+        unidade: Unit of measure.
+        sumarizacao: Supported summarization modes for the variable.
+    """
+
     id: int
     nome: str
     unidade: str
@@ -65,6 +80,15 @@ class Variavel:
 
 @dataclass
 class Categoria:
+    """Represents a category/member of a classification.
+
+    Attributes:
+        id: Category identifier.
+        nome: Category name.
+        unidade: Optional unit of measure for this category.
+        nivel: Category level (depth) within the classification.
+    """
+
     id: int
     nome: str
     unidade: str | None
@@ -73,12 +97,28 @@ class Categoria:
 
 @dataclass
 class ClassificacaoSumarizacao:
+    """Summarization configuration for a classification.
+
+    Attributes:
+        status: Whether summarization is enabled.
+        excecao: List of category ids excluded from summarization.
+    """
+
     status: bool
     excecao: list[int]
 
 
 @dataclass
 class Classificacao:
+    """Classification metadata including available categories.
+
+    Attributes:
+        id: Classification identifier.
+        nome: Display name.
+        sumarizacao: Summarization rules.
+        categorias: List of available categories.
+    """
+
     id: int
     nome: str
     sumarizacao: ClassificacaoSumarizacao
@@ -87,12 +127,27 @@ class Classificacao:
 
 @dataclass
 class Pesquisa:
+    """Reference to the survey/research associated with the aggregate.
+
+    Attributes:
+        id: Survey identifier.
+        nome: Survey name.
+    """
+
     id: str
     nome: str
 
 
 @dataclass
 class Periodicidade:
+    """Periodicidade metadata for an aggregate.
+
+    Attributes:
+        frequencia: Frequency id or description.
+        inicio: Start of the supported period range.
+        fim: End of the supported period range.
+    """
+
     frequencia: str
     inicio: str
     fim: str
@@ -100,6 +155,14 @@ class Periodicidade:
 
 @dataclass
 class AgregadoNivelTerritorial:
+    """Lists of territorial levels used by an aggregate.
+
+    Attributes:
+        administrativo: Administrative territorial levels.
+        especial: Special territorial levels.
+        ibge: IBGE-specific territorial levels.
+    """
+
     administrativo: list[str]
     especial: list[str]
     ibge: list[str]
@@ -107,6 +170,13 @@ class AgregadoNivelTerritorial:
 
 @dataclass
 class Agregado:
+    """Complete metadata for an agregados API aggregate.
+
+    Attributes mirror the structure returned by the IBGE agregados
+    metadata endpoints and include variables, classifications,
+    supported periods and localidades.
+    """
+
     id: int
     nome: str
     url: str
@@ -122,12 +192,27 @@ class Agregado:
 
 @dataclass
 class IndiceAgregado:
+    """Small index entry identifying an agregado within a pesquisa.
+
+    Attributes:
+        id: Aggregate id.
+        nome: Aggregate name.
+    """
+
     id: int
     nome: str
 
 
 @dataclass
 class IndicePesquisaAgregados:
+    """Index of agregados grouped under a pesquisa/survey.
+
+    Attributes:
+        id: Survey id.
+        nome: Survey name.
+        agregados: List of :class:`IndiceAgregado` entries.
+    """
+
     id: str
     nome: str
     agregados: list[IndiceAgregado]
@@ -141,28 +226,68 @@ class AcervoEnum(StrEnum):
     PERIODICIDADE = "E"
     VARIAVEL = "V"
 
+    """Enum used to request different acervos (collections) from the API.
+
+    Values correspond to the query parameter accepted by the
+    agregados API (see `acervo` parameter in the API docs).
+    """
+
 
 def build_url_agregados() -> str:
-    """Obtém o conjunto de agregados, agrupados pelas respectivas pesquisas."""
+    """Return the base URL for listing agregados grouped by pesquisa.
+
+    Returns:
+        The absolute URL to request the agregados index.
+    """
     return BASE_URL
 
 
 def build_url_metadados(agregado_id: int) -> str:
-    """Obtém os metadados associados ao agregado."""
+    """Return the metadata URL for a given agregado id.
+
+    Args:
+        agregado_id: Aggregate id to build the metadata URL for.
+
+    Returns:
+        Absolute URL for the aggregate metadata endpoint.
+    """
     return BASE_URL + f"/{agregado_id}/metadados"
 
 
 def build_url_periodos(agregado_id: int) -> str:
-    """Obtém os períodos associados ao agregado."""
+    """Return the periods URL for a given agregado id.
+
+    Args:
+        agregado_id: Aggregate id to query periods for.
+
+    Returns:
+        Absolute URL for the aggregate periods endpoint.
+    """
     return BASE_URL + f"/{agregado_id}/periodos"
 
 
 def build_url_localidades(agregado_id: int, localidades_nivel: str) -> str:
-    """Obtém as localidades associadas ao agregado de acordo com um ou mais níveis geográficos."""
+    """Return the localidades URL for an aggregate and territorial level.
+
+    Args:
+        agregado_id: Aggregate id.
+        localidades_nivel: Comma-separated territorial level ids.
+
+    Returns:
+        Absolute URL for the localidades endpoint filtered by levels.
+    """
     return BASE_URL + f"/{agregado_id}/localidades/{localidades_nivel}"
 
 
 def build_url_acervos(acervo: AcervoEnum) -> str:
+    """Return the base agregados URL with the ``acervo`` query parameter.
+
+    Args:
+        acervo: One of the :class:`AcervoEnum` members to request.
+
+    Returns:
+        Absolute URL with the acervo query parameter set.
+    """
     params = {"acervo": acervo.value}
     url_parts = list(urlparse.urlparse(BASE_URL))
     query = dict(urlparse.parse_qsl(url_parts[4]))
