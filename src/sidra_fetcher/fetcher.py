@@ -19,7 +19,8 @@ from tenacity import retry
 from tenacity.stop import stop_after_attempt
 from tenacity.wait import wait_exponential
 
-from sidra_fetcher.api.agregados import (
+from . import logger
+from .agregados import (
     AcervoEnum,
     Agregado,
     AgregadoNivelTerritorial,
@@ -40,8 +41,6 @@ from sidra_fetcher.api.agregados import (
     build_url_metadados,
     build_url_periodos,
 )
-
-from . import logger
 
 
 class SidraClient:

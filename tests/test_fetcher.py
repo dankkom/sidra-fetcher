@@ -21,7 +21,7 @@ def mock_retry(*args, **kwargs):
 
 sys.modules["tenacity"].retry = mock_retry
 
-from sidra_fetcher.api.agregados import AcervoEnum
+from sidra_fetcher.agregados import AcervoEnum
 from sidra_fetcher.fetcher import SidraClient
 
 

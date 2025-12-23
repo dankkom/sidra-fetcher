@@ -1,6 +1,6 @@
 import unittest
 
-from sidra_fetcher.api.sidra import (
+from sidra_fetcher.sidra import (
     Parametro,
     Precisao,
     parameter_from_url,

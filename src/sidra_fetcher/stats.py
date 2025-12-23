@@ -15,7 +15,7 @@ data shape. Available functions include:
 from functools import reduce
 from typing import Any
 
-from .api.agregados import Agregado
+from .agregados import Agregado
 
 
 def get_stat_localidades(agregado: Agregado) -> dict[str, int]:

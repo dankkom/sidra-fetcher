@@ -1,6 +1,6 @@
 import unittest
 
-from sidra_fetcher.api.agregados import (
+from sidra_fetcher.agregados import (
     AcervoEnum,
     build_url_acervos,
     build_url_agregados,

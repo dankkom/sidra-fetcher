@@ -1,7 +1,7 @@
 import unittest
 from unittest.mock import Mock
 
-from sidra_fetcher.api.agregados import (
+from sidra_fetcher.agregados import (
     Agregado,
     AgregadoNivelTerritorial,
     Categoria,
