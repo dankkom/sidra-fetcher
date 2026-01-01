@@ -56,6 +56,17 @@ class Precisao(Enum):
     D7 = "7"  # Sete casas decimais
     D8 = "8"  # Oito casas decimais
     D9 = "9"  # Nove casas decimais
+    D10 = "10"  # Dez casas decimais
+    D11 = "11"  # Onze casas decimais
+    D12 = "12"  # Doze casas decimais
+    D13 = "13"  # Treze casas decimais
+    D14 = "14"  # Quatorze casas decimais
+    D15 = "15"  # Quinze casas decimais
+    D16 = "16"  # Dezesseis casas decimais
+    D17 = "17"  # Dezessete casas decimais
+    D18 = "18"  # Dezoito casas decimais
+    D19 = "19"  # Dezenove casas decimais
+    D20 = "20"  # Vinte casas decimais
 
 
 class Parametro:
