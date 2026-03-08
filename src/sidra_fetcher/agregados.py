@@ -25,8 +25,9 @@ containers for data downloaded by :class:`sidra_fetcher.fetcher.SidraClient`.
 """
 
 import datetime as dt
+import json
 import urllib.parse as urlparse
-from dataclasses import dataclass
+from dataclasses import asdict, dataclass
 from enum import StrEnum
 from urllib.parse import urlencode
 
@@ -309,3 +310,28 @@ def build_url_acervos(acervo: AcervoEnum) -> str:
     query.update(params)
     url_parts[4] = urlencode(query)
     return urlparse.urlunparse(url_parts)
+
+
+def to_json(obj, **kwargs) -> str:
+    """Serialize an agregados dataclass instance to a JSON string.
+
+    Nested dataclasses are converted recursively. :class:`datetime.date`
+    fields are serialized as ISO-8601 strings (``YYYY-MM-DD``).
+
+    Args:
+        obj: Any dataclass instance defined in this module.
+        **kwargs: Extra keyword arguments forwarded to :func:`json.dumps`
+            (e.g. ``indent=2``).
+
+    Returns:
+        JSON string representation of the dataclass.
+    """
+
+    def _default(o):
+        if isinstance(o, dt.date):
+            return o.isoformat()
+        raise TypeError(
+            f"Object of type {type(o).__name__} is not JSON serializable"
+        )
+
+    return json.dumps(asdict(obj), default=_default, **kwargs)
