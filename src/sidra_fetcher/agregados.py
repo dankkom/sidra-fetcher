@@ -29,6 +29,7 @@ import json
 import urllib.parse as urlparse
 from dataclasses import asdict, dataclass
 from enum import StrEnum
+from pathlib import Path
 from urllib.parse import urlencode
 
 BASE_URL = "https://servicodados.ibge.gov.br/api/v3/agregados"
@@ -312,26 +313,100 @@ def build_url_acervos(acervo: AcervoEnum) -> str:
     return urlparse.urlunparse(url_parts)
 
 
-def to_json(obj, **kwargs) -> str:
-    """Serialize an agregados dataclass instance to a JSON string.
+class DateEncoder(json.JSONEncoder):
+    """JSON encoder that converts dt.date to ISO 8601 string."""
 
-    Nested dataclasses are converted recursively. :class:`datetime.date`
-    fields are serialized as ISO-8601 strings (``YYYY-MM-DD``).
+    def default(self, obj):
+        if isinstance(obj, dt.date):
+            return obj.isoformat()
+        return super().default(obj)
+
+
+def save_agregado(agregado: Agregado, path: str | Path) -> None:
+    """Save an Agregado instance to a JSON file.
 
     Args:
-        obj: Any dataclass instance defined in this module.
-        **kwargs: Extra keyword arguments forwarded to :func:`json.dumps`
-            (e.g. ``indent=2``).
-
-    Returns:
-        JSON string representation of the dataclass.
+        agregado: The Agregado instance to save.
+        path: Path to the output JSON file.
     """
-
-    def _default(o):
-        if isinstance(o, dt.date):
-            return o.isoformat()
-        raise TypeError(
-            f"Object of type {type(o).__name__} is not JSON serializable"
+    with open(path, "w", encoding="utf-8") as f:
+        json.dump(
+            asdict(agregado),
+            f,
+            ensure_ascii=False,
+            indent=2,
+            cls=DateEncoder,
         )
 
-    return json.dumps(asdict(obj), default=_default, **kwargs)
+
+def load_agregado(path: str | Path) -> Agregado:
+    """Load an Agregado instance from a JSON file.
+
+    Args:
+        path: Path to the input JSON file.
+
+    Returns:
+        The deserialized Agregado instance.
+    """
+    with open(path, "r", encoding="utf-8") as f:
+        data = json.load(f)
+
+    nivel_territorial = AgregadoNivelTerritorial(**data["nivel_territorial"])
+    pesquisa = Pesquisa(**data["pesquisa"])
+    periodicidade = Periodicidade(**data["periodicidade"])
+
+    variaveis = [Variavel(**v) for v in data.get("variaveis", [])]
+
+    classificacoes = []
+    for c in data.get("classificacoes", []):
+        sumarizacao = ClassificacaoSumarizacao(**c["sumarizacao"])
+        categorias = [Categoria(**cat) for cat in c.get("categorias", [])]
+        classificacoes.append(
+            Classificacao(
+                id=c["id"],
+                nome=c["nome"],
+                sumarizacao=sumarizacao,
+                categorias=categorias,
+            )
+        )
+
+    periodos = []
+    for p in data.get("periodos", []):
+        modificacao_str = p["modificacao"]
+        try:
+            modificacao = dt.date.fromisoformat(modificacao_str)
+        except ValueError:
+            modificacao = dt.datetime.strptime(modificacao_str, "%d/%m/%Y")
+            modificacao = modificacao.date()
+        periodos.append(
+            Periodo(
+                id=p["id"],
+                literals=p["literals"],
+                modificacao=modificacao,
+            )
+        )
+
+    localidades = []
+    for loc in data.get("localidades", []):
+        nivel = NivelTerritorial(**loc["nivel"])
+        localidades.append(
+            Localidade(
+                id=loc["id"],
+                nome=loc["nome"],
+                nivel=nivel,
+            )
+        )
+
+    return Agregado(
+        id=data["id"],
+        nome=data["nome"],
+        url=data["url"],
+        pesquisa=pesquisa,
+        assunto=data["assunto"],
+        periodicidade=periodicidade,
+        nivel_territorial=nivel_territorial,
+        variaveis=variaveis,
+        classificacoes=classificacoes,
+        periodos=periodos,
+        localidades=localidades,
+    )
